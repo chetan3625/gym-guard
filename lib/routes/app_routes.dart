@@ -11,4 +11,5 @@ class AppRoutes {
   static const String verifyOtp = '/verify-otp';
   static const String resetPassword = '/reset-password';
   static const String resetPasswordSuccess = '/reset-password-success';
+  static const String gymOnboarding = '/gym-onboarding';
 }

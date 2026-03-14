@@ -1,6 +1,8 @@
 import 'package:azanto/Services/login_services.dart';
 import 'package:azanto/Services/session_service.dart';
+import 'package:azanto/Services/token_refresh_manager.dart';
 import 'package:azanto/routes/app_routes.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -52,11 +54,16 @@ class LoginViewController extends GetxController {
           response['token'] as String? ??
           response['access_token'] as String? ??
           '';
-      await session.startSession(token: token);
+      final refreshToken = response['refresh_token'] as String? ?? '';
+
+      await session.startSession(token: token, refreshToken: refreshToken);
+      _printTokenOnLogin(token);
+      await TokenRefreshManager.scheduleTokenRefresh();
 
       final message = response['message'] as String? ?? 'Login successful';
       Get.snackbar('Success', message);
-      Get.offAllNamed(AppRoutes.home);
+      final hasGym = session.gymId?.isNotEmpty == true;
+      Get.offAllNamed(hasGym ? AppRoutes.home : AppRoutes.gymOnboarding);
     } on ApiException catch (e) {
       Get.snackbar('Login failed', e.detailMessage);
     } catch (e) {
@@ -68,6 +75,16 @@ class LoginViewController extends GetxController {
 
   void onSignUpTap() {
     Get.toNamed(AppRoutes.signup);
+  }
+
+  void _printTokenOnLogin(String token) {
+    if (!kDebugMode) return;
+    final normalized = token.trim();
+    if (normalized.isEmpty) {
+      debugPrint('[AUTH][login] Bearer token is empty');
+      return;
+    }
+    debugPrint('[AUTH][login] Bearer token: $normalized');
   }
 
   @override

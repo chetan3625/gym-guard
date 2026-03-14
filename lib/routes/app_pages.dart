@@ -7,6 +7,7 @@ import 'package:azanto/bindings/signup_binding.dart';
 import 'package:azanto/bindings/splash_binding.dart';
 import 'package:azanto/bindings/verify_otp_binding.dart';
 import 'package:azanto/bindings/reset_password_binding.dart';
+import 'package:azanto/bindings/gym_onboarding_binding.dart';
 import 'package:azanto/routes/app_routes.dart';
 import 'package:azanto/routes/middleware/auth_guard.dart';
 import 'package:azanto/views/auth_entry_view.dart';
@@ -19,6 +20,7 @@ import 'package:azanto/views/splash_view.dart';
 import 'package:azanto/views/verify_otp_view.dart';
 import 'package:azanto/views/reset_password_view.dart';
 import 'package:azanto/views/password_reset_success_view.dart';
+import 'package:azanto/views/gym_onboarding_view.dart';
 import 'package:get/get.dart';
 
 class AppPages {
@@ -74,6 +76,12 @@ class AppPages {
     GetPage<dynamic>(
       name: AppRoutes.resetPasswordSuccess,
       page: () => const PasswordResetSuccessScreen(),
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.gymOnboarding,
+      page: () => const GymOnboardingScreen(),
+      binding: GymOnboardingBinding(),
+      middlewares: [AuthGuard()],
     ),
   ];
 }

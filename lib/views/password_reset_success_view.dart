@@ -7,7 +7,6 @@ import 'package:azanto/routes/app_routes.dart';
 import 'package:azanto/views/widgets/corner_back_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -93,10 +92,11 @@ class PasswordResetSuccessScreen extends StatelessWidget {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          SvgPicture.asset(
-                            'assets/icons/password_reset.svg',
+                          Image.asset(
+                            'assets/icons/password_reset_icon.png',
                             width: 88 * scale,
                             height: 88 * scale,
+                            fit: BoxFit.contain,
                           ),
                           SizedBox(height: 22 * scaleY),
                           Text(
