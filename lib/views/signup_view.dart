@@ -127,11 +127,11 @@ class _FormContent extends StatelessWidget {
           ),
         ),
         SizedBox(height: 18 * scaleY),
-        _Label('Full Name', scale),
+        _Label('Enter First Name and Last Name', scale),
         SizedBox(height: 8 * scaleY),
         _InputField(
           controller: controller.fullNameController,
-          hintText: 'Full Name',
+          hintText: 'Enter First Name and Last Name',
           icon: Icons.person_outline,
         ),
         SizedBox(height: 14 * scaleY),

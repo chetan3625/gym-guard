@@ -1,7 +1,9 @@
 import 'package:azanto/Services/login_services.dart';
+import 'package:azanto/Services/profile_local_prefs_service.dart';
 import 'package:azanto/routes/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 
 class SignupViewController extends GetxController {
   final fullNameController = TextEditingController();
@@ -14,6 +16,9 @@ class SignupViewController extends GetxController {
   final RxBool isLoading = false.obs;
 
   final ApiServices services = ApiServices();
+  final ProfileLocalPrefsService _profilePrefs =
+      Get.find<ProfileLocalPrefsService>();
+  final GetStorage _box = GetStorage();
 
   void onBackTap() {
     final canPop = Get.key.currentState?.canPop() ?? false;
@@ -64,11 +69,14 @@ class SignupViewController extends GetxController {
     isLoading.value = true;
 
     try {
+      final role = _box.read<String>('selected_role') ?? 'member'; // default to member if not set
       final response = await services.signupUser(
         fullName: name,
         phone: phoneDigits,
         password: password,
+        role: role,
       );
+      await _profilePrefs.saveFromSignup(fullName: name, phone: phoneDigits);
       final message = response['message'] as String? ?? 'Account created';
       Get.snackbar('Success', message);
       Get.offAllNamed(AppRoutes.login);

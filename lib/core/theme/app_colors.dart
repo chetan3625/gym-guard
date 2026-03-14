@@ -25,19 +25,19 @@ class AppColors {
   static const Color roleCardGlass = Color(0x4B5A616A);
   static const Color roleCardBorder = Color(0x26FFFFFF);
 
-  static const Color roleOwnerBorder = Color(0x8C3D7E0E);
-  static const Color roleOwnerGradientTop = Color(0xFF8BFA23);
-  static const Color roleOwnerGradientMid = Color(0xFF6BCF17);
-  static const Color roleOwnerGradientBottom = Color(0xFF4A970F);
+  static const Color roleOwnerBorder = Color(0x8C74FF2A);
+  static const Color roleOwnerGradientTop = brandGreen;
+  static const Color roleOwnerGradientMid = brandGreen;
+  static const Color roleOwnerGradientBottom = brandGreen;
   static const Color roleOwnerTopHighlight = Color(0x47FFFFFF);
   static const Color roleButtonTextShadow = Color(0x66000000);
   static const Color roleButtonShadowHeavy = Color(0x80000000);
   static const Color roleButtonShadowLight = Color(0x61000000);
 
-  static const Color roleMemberText = Color(0xFF7BFB1D);
+  static const Color roleMemberText = brandGreen;
   static const Color roleMemberIcon = Color(0xFFA6A9AE);
   static const Color roleMemberFill = Color(0xFF32363C);
-  static const Color roleMemberBorder = Color(0xFF6BEB18);
+  static const Color roleMemberBorder = brandGreen;
 
   static const Color authOverlayTop = Color(0x4D000000);
   static const Color authOverlayMid = Color(0x26000000);
@@ -45,10 +45,10 @@ class AppColors {
 
   static const Color authTitleHighlight = Color(0xFFFFFFC8);
   static const Color authLoginFill = Color(0xFF484848);
-  static const Color authLoginBorder = Color(0xAA74E11C);
-  static const Color authSignUpGradientTop = Color(0xFF80EE20);
-  static const Color authSignUpGradientBottom = Color(0xFF4A980F);
-  static const Color authSignUpBorder = Color(0xA238740B);
+  static const Color authLoginBorder = Color(0xAA74FF2A);
+  static const Color authSignUpGradientTop = brandGreen;
+  static const Color authSignUpGradientBottom = brandGreen;
+  static const Color authSignUpBorder = Color(0xA274FF2A);
   static const Color authButtonShadow = Color(0x66000000);
   static const Color authButtonTextShadow = Color(0x5C000000);
 
@@ -67,8 +67,8 @@ class AppColors {
   static const Color loginFieldFill = Color(0xD426272C);
   static const Color loginForgot = Color(0xFFC6C7CE);
   static const Color loginButtonFill = Color(0xFF3E3F42);
-  static const Color loginButtonBorderStart = Color(0xFF8EE81E);
+  static const Color loginButtonBorderStart = brandGreen;
   static const Color loginButtonBorderEnd = Color(0xFF00DFFF);
   static const Color loginCaption = Color(0xFFF2F2F2);
-  static const Color loginSignUp = Color(0xFF77F61E);
+  static const Color loginSignUp = brandGreen;
 }

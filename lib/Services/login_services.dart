@@ -1,10 +1,9 @@
 import 'dart:convert';
 
+import 'package:azanto/core/config/global_variables.dart';
 import 'package:http/http.dart' as http;
 
 class ApiServices {
-  static const String baseUrl = "https://api.azanto.in/api/v1/auth";
-
   /// Calls the login API and returns the decoded JSON body.
   /// Throws [ApiException] with a friendly message when the request fails.
   Future<Map<String, dynamic>> loginUser({
@@ -13,7 +12,7 @@ class ApiServices {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse("$baseUrl/login"),
+        Uri.parse(AuthApiEndpoints.login),
         headers: const {"Content-Type": "application/x-www-form-urlencoded"},
         body: {"username": phoneno, "password": password},
       );
@@ -48,16 +47,17 @@ class ApiServices {
     required String fullName,
     required String phone,
     required String password,
+    required String role,
   }) async {
     try {
       final response = await http.post(
-        Uri.parse("$baseUrl/register"),
+        Uri.parse(AuthApiEndpoints.register),
         headers: const {"Content-Type": "application/json"},
         body: jsonEncode({
           "name": fullName,
           "phone": phone,
           "password": password,
-          "role": "admin",
+          "role": role,
         }),
       );
 
@@ -90,7 +90,7 @@ class ApiServices {
   Future<Map<String, dynamic>> requestOtp({required String phone}) async {
     try {
       final response = await http.post(
-        Uri.parse("$baseUrl/request-otp"),
+        Uri.parse(AuthApiEndpoints.requestOtp),
         headers: const {"Content-Type": "application/json"},
         body: jsonEncode({"phone": phone}),
       );
@@ -127,7 +127,7 @@ class ApiServices {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse("$baseUrl/verify-otp"),
+        Uri.parse(AuthApiEndpoints.verifyOtp),
         headers: const {"Content-Type": "application/json"},
         body: jsonEncode({"phone": phone, "otp": otp}),
       );
@@ -164,7 +164,7 @@ class ApiServices {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse("$baseUrl/reset-password"),
+        Uri.parse(AuthApiEndpoints.resetPassword),
         headers: const {"Content-Type": "application/json"},
         body: jsonEncode({
           "reset_token": resetToken,
@@ -195,6 +195,29 @@ class ApiServices {
       if (e is ApiException) rethrow;
       print("Reset password unexpected error: $e");
       throw ApiException('Something went wrong, please try again.');
+    }
+  }
+
+  Future<String?> refreshToken({required String refreshTokenValue}) async {
+    try {
+      final response = await http.post(
+        Uri.parse(AuthApiEndpoints.refreshToken),
+        headers: const {"Content-Type": "application/json"},
+        body: jsonEncode({"refresh_token": refreshTokenValue}),
+      );
+
+      final body = response.body;
+      final decoded = body.isNotEmpty ? jsonDecode(body) : {};
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return decoded is String ? decoded : decoded['access_token'];
+      }
+
+      print("Token refresh failed (${response.statusCode}): $body");
+      return null;
+    } catch (e) {
+      print("Token refresh error: $e");
+      return null;
     }
   }
 
