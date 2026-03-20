@@ -4,6 +4,7 @@ import 'package:azanto/Services/login_services.dart';
 import 'package:azanto/Services/session_service.dart';
 import 'package:azanto/Services/token_refresh_service.dart';
 import 'package:azanto/core/config/global_variables.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class GymService {
@@ -92,6 +93,83 @@ class GymService {
     );
   }
 
+  /// Returns the first gym record for the authenticated owner, or null if none.
+  Future<Map<String, dynamic>?> getGymForOwner() async {
+    final token = _sessionService.normalizedToken;
+    if (token == null || token.isEmpty) {
+      throw ApiException('Session expired. Please login again.');
+    }
+
+    http.Response response = await _getGym(token: token);
+
+    // Retry after refresh if auth error.
+    if (_isAuthError(response.statusCode)) {
+      final refreshed = await TokenRefreshService(
+        sessionService: _sessionService,
+      ).refreshToken();
+      final newToken = _sessionService.normalizedToken;
+      if (refreshed && newToken != null && newToken.isNotEmpty) {
+        response = await _getGym(token: newToken);
+      }
+    }
+
+    final decoded = _decodeResponseBody(response.body);
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      // Backend may return a single map or a list of maps.
+      Map<String, dynamic>? map;
+      if (decoded is Map) {
+        map = decoded is Map<String, dynamic>
+            ? decoded
+            : Map<String, dynamic>.from(decoded);
+      } else if (decoded is List && decoded.isNotEmpty) {
+        final first = decoded.first;
+        if (first is Map) {
+          map = first is Map<String, dynamic>
+              ? first
+              : Map<String, dynamic>.from(first);
+        }
+      }
+
+      if (map != null) {
+        final gymId = map['id']?.toString();
+        if (gymId != null && gymId.isNotEmpty) {
+          await _sessionService.setGymId(gymId);
+        }
+        if (kDebugMode) {
+          debugPrint('[GYM] getGym response: $map');
+        }
+        return map;
+      }
+      return null;
+    }
+
+    // Log raw error for debugging.
+    print(
+      'Get gym failed (${response.statusCode}): '
+      '${response.body.isNotEmpty ? response.body : 'no body'}',
+    );
+
+    if (_isAuthError(response.statusCode)) {
+      throw ApiException(
+        'Session expired. Please log in again.',
+        statusCode: response.statusCode,
+        detail: _extractDetail(decoded),
+      );
+    }
+
+    throw ApiException(
+      _extractMessage(
+        decoded,
+        fallback: response.body.trim().isNotEmpty
+            ? response.body.trim()
+            : 'Unable to fetch gym',
+      ),
+      statusCode: response.statusCode,
+      detail: _extractDetail(decoded),
+    );
+  }
+
   dynamic _decodeResponseBody(String body) {
     if (body.trim().isEmpty) return null;
     try {
@@ -149,6 +227,16 @@ class GymService {
         'is_active': isActive,
         'isActive': isActive,
       }),
+    );
+  }
+
+  Future<http.Response> _getGym({required String token}) {
+    return _client.get(
+      Uri.parse(GymApiEndpoints.getGym),
+      headers: <String, String>{
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
     );
   }
 

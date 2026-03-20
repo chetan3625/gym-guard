@@ -198,7 +198,9 @@ class ApiServices {
     }
   }
 
-  Future<String?> refreshToken({required String refreshTokenValue}) async {
+  Future<Map<String, dynamic>?> refreshToken({
+    required String refreshTokenValue,
+  }) async {
     try {
       final response = await http.post(
         Uri.parse(AuthApiEndpoints.refreshToken),
@@ -210,7 +212,10 @@ class ApiServices {
       final decoded = body.isNotEmpty ? jsonDecode(body) : {};
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        return decoded is String ? decoded : decoded['access_token'];
+        if (decoded is Map<String, dynamic>) return decoded;
+        if (decoded is Map) return Map<String, dynamic>.from(decoded);
+        if (decoded is String) return {'access_token': decoded};
+        return null;
       }
 
       print("Token refresh failed (${response.statusCode}): $body");

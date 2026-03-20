@@ -42,10 +42,12 @@ dependencies:
   http: ^1.1.0
   flutter_screenutil: ^5.9.0
   image_picker: ^1.1.2
+  mobile_scanner: ^3.5.7
   shared_preferences: ^2.5.3
   slide_to_act: ^2.0.1
   pdf: ^3.11.1
   printing: ^5.13.2
+  url_launcher: ^6.2.6
 
 dev_dependencies:
   flutter_test:

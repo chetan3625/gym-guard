@@ -127,6 +127,12 @@ class LoginScreen extends GetView<LoginViewController> {
                 controller: controller.usernameController,
                 hintText: 'Phone No',
                 icon: Icons.person,
+                keyboardType: TextInputType.phone,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(10),
+                ],
+                maxLength: 10,
               ),
             ),
             Positioned(
@@ -185,9 +191,12 @@ class LoginScreen extends GetView<LoginViewController> {
               top: loginButtonTop,
               width: loginButtonWidth,
               height: loginButtonHeight,
-              child: _LoginButton(
-                onTap: () => controller.onLoginTap(),
-                textScale: scale,
+              child: Obx(
+                () => _LoginButton(
+                  onTap: () => controller.onLoginTap(),
+                  textScale: scale,
+                  isBusy: controller.isLoading.value,
+                ),
               ),
             ),
             Positioned(
@@ -231,6 +240,9 @@ class _LoginField extends StatelessWidget {
     required this.icon,
     this.obscureText = false,
     this.suffix,
+    this.keyboardType,
+    this.inputFormatters,
+    this.maxLength,
   });
 
   final TextEditingController controller;
@@ -238,6 +250,9 @@ class _LoginField extends StatelessWidget {
   final IconData icon;
   final bool obscureText;
   final Widget? suffix;
+  final TextInputType? keyboardType;
+  final List<TextInputFormatter>? inputFormatters;
+  final int? maxLength;
 
   @override
   Widget build(BuildContext context) {
@@ -249,6 +264,9 @@ class _LoginField extends StatelessWidget {
       child: TextField(
         controller: controller,
         obscureText: obscureText,
+        keyboardType: keyboardType,
+        inputFormatters: inputFormatters,
+        maxLength: maxLength,
         style: GoogleFonts.montserrat(
           color: AppColors.white,
           fontSize: 28 * MediaQuery.textScalerOf(context).scale(0.5),
@@ -265,6 +283,7 @@ class _LoginField extends StatelessWidget {
           prefixIcon: Icon(icon, color: AppColors.inputIcon, size: 23),
           suffixIcon: suffix,
           contentPadding: const EdgeInsets.symmetric(vertical: 15),
+          counterText: '',
         ),
       ),
     );
@@ -272,10 +291,15 @@ class _LoginField extends StatelessWidget {
 }
 
 class _LoginButton extends StatelessWidget {
-  const _LoginButton({required this.onTap, required this.textScale});
+  const _LoginButton({
+    required this.onTap,
+    required this.textScale,
+    this.isBusy = false,
+  });
 
   final VoidCallback onTap;
   final double textScale;
+  final bool isBusy;
 
   @override
   Widget build(BuildContext context) {
@@ -302,21 +326,33 @@ class _LoginButton extends StatelessWidget {
             color: AppColors.transparent,
             child: InkWell(
               borderRadius: BorderRadius.circular(999),
-              onTap: onTap,
+              onTap: isBusy ? null : onTap,
               child: Center(
                 child: SizedBox(
                   width: 63 * textScale,
                   height: 27 * textScale,
                   child: FittedBox(
-                    child: Text(
-                      'Login',
-                      style: GoogleFonts.montserrat(
-                        color: AppColors.white,
-                        fontSize: 20 * textScale,
-                        fontWeight: FontWeight.w700,
-                        height: 1.0,
-                      ),
-                    ),
+                    child: isBusy
+                        ? SizedBox(
+                            width: 18 * textScale,
+                            height: 18 * textScale,
+                            child: const CircularProgressIndicator(
+                              strokeWidth: 2.4,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(
+                                AppColors.white,
+                              ),
+                            ),
+                          )
+                        : Text(
+                            'Login',
+                            style: GoogleFonts.montserrat(
+                              color: AppColors.white,
+                              fontSize: 20 * textScale,
+                              fontWeight: FontWeight.w700,
+                              height: 1.0,
+                            ),
+                          ),
                   ),
                 ),
               ),

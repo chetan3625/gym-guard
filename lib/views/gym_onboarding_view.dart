@@ -36,6 +36,7 @@ class _GymOnboardingScreenState extends State<GymOnboardingScreen> {
   int _step = 0;
   bool _isActive = true;
   bool _submitting = false;
+
   TimeOfDay _openingTime = const TimeOfDay(hour: 6, minute: 0);
   TimeOfDay _closingTime = const TimeOfDay(hour: 22, minute: 0);
 
@@ -162,6 +163,7 @@ class _GymOnboardingScreenState extends State<GymOnboardingScreen> {
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -186,16 +188,20 @@ class _GymOnboardingScreenState extends State<GymOnboardingScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Let’s set up your gym',
-                        style: GoogleFonts.poppins(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                      Expanded(
+                        child: Text(
+                          'Let’s set up your gym',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.poppins(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
+                      const SizedBox(width: 12),
                       TextButton(
                         onPressed: _submitting
                             ? null
@@ -249,6 +255,8 @@ class _GymOnboardingScreenState extends State<GymOnboardingScreen> {
                                   validateEmail: _validateEmail,
                                 ),
                                 _BranchDetailsStep(
+                                  gymName: _gymNameCtrl.text.trim(),
+                                  gymEmail: _gymEmailCtrl.text.trim(),
                                   branchNameCtrl: _branchNameCtrl,
                                   branchAddressCtrl: _branchAddressCtrl,
                                   branchCityCtrl: _branchCityCtrl,
@@ -309,7 +317,9 @@ class _GymOnboardingScreenState extends State<GymOnboardingScreen> {
                                     color: Colors.black,
                                   ),
                                 )
-                              : Text(_step == 0 ? 'Continue' : 'Finish setup'),
+                              : Text(_step == 0
+                                  ? 'Continue'
+                                  : 'Finish setup'),
                         ),
                       ),
                     ],
@@ -341,8 +351,9 @@ class _GymDetailsStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
+      physics: const BouncingScrollPhysics(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -401,6 +412,7 @@ class _GymDetailsStep extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(height: 16),
         ],
       ),
     );
@@ -409,6 +421,8 @@ class _GymDetailsStep extends StatelessWidget {
 
 class _BranchDetailsStep extends StatelessWidget {
   const _BranchDetailsStep({
+    required this.gymName,
+    required this.gymEmail,
     required this.branchNameCtrl,
     required this.branchAddressCtrl,
     required this.branchCityCtrl,
@@ -421,6 +435,8 @@ class _BranchDetailsStep extends StatelessWidget {
     required this.onPickClosing,
   });
 
+  final String gymName;
+  final String gymEmail;
   final TextEditingController branchNameCtrl;
   final TextEditingController branchAddressCtrl;
   final TextEditingController branchCityCtrl;
@@ -434,10 +450,51 @@ class _BranchDetailsStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasGymData = gymName.trim().isNotEmpty || gymEmail.trim().isNotEmpty;
+
     return Padding(
       padding: const EdgeInsets.all(20),
       child: ListView(
         children: [
+          if (hasGymData)
+            Container(
+              padding: const EdgeInsets.all(14),
+              margin: const EdgeInsets.only(bottom: 14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1B1D24),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Colors.white.withOpacity(0.08)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Gym details',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white70,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  if (gymName.trim().isNotEmpty)
+                    Text(
+                      gymName,
+                      style: GoogleFonts.inter(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  if (gymEmail.trim().isNotEmpty)
+                    Text(
+                      gymEmail,
+                      style: GoogleFonts.inter(
+                        color: Colors.white70,
+                      ),
+                    ),
+                ],
+              ),
+            ),
           _Field(
             label: 'Branch name',
             controller: branchNameCtrl,

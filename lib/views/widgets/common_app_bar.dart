@@ -1,43 +1,44 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
   const CommonAppBar({super.key});
 
   @override
-  Size get preferredSize => const Size.fromHeight(68);
+  Size get preferredSize => Size.fromHeight(68.h);
 
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       bottom: false,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
         child: Container(
-          height: 54,
+          height: 54.h,
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               colors: [Color(0xFF3B3C41), Color(0xFF24262A)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(16.r),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.4),
-                blurRadius: 18,
-                offset: const Offset(0, 10),
+                blurRadius: 18.r,
+                offset: Offset(0, 10.h),
               ),
             ],
             border: Border.all(color: Colors.white.withOpacity(0.09)),
           ),
           child: Row(
             children: [
-              const SizedBox(width: 18),
+              SizedBox(width: 18.w),
               Text(
                 'Azanto',
                 style: GoogleFonts.montserrat(
-                  fontSize: 24,
+                  fontSize: 24.sp,
                   fontWeight: FontWeight.w800,
                   color: Colors.white,
                   letterSpacing: 0.15,
@@ -45,9 +46,9 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
               ),
               const Spacer(),
               _IconButton(icon: Icons.settings_outlined, onTap: () {}),
-              const SizedBox(width: 8),
+              SizedBox(width: 8.w),
               _IconButton(icon: Icons.notifications_none_rounded, onTap: () {}),
-              const SizedBox(width: 14),
+              SizedBox(width: 14.w),
             ],
           ),
         ),
@@ -66,15 +67,15 @@ class _IconButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(12.r),
       child: Container(
-        padding: const EdgeInsets.all(8),
+        padding: EdgeInsets.all(8.w),
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(12.r),
           border: Border.all(color: Colors.white.withOpacity(0.06)),
         ),
-        child: Icon(icon, color: Colors.white.withOpacity(0.8), size: 20),
+        child: Icon(icon, color: Colors.white.withOpacity(0.8), size: 20.sp),
       ),
     );
   }

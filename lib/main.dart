@@ -63,6 +63,7 @@ class _AzantoAppState extends State<AzantoApp> {
         return GetMaterialApp(
           debugShowCheckedModeBanner: false,
           title: 'Azanto',
+          builder: (context, child) => SafeArea(child: child!),
           theme: ThemeData(
             useMaterial3: false,
             scaffoldBackgroundColor: AppColors.scaffoldDark,

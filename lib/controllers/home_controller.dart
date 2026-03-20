@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:azanto/Services/session_service.dart';
+import 'package:azanto/Services/gym_service.dart';
 import 'package:azanto/Services/token_refresh_manager.dart';
 import 'package:azanto/controllers/profile_controller.dart';
 import 'package:azanto/routes/app_routes.dart';
@@ -19,6 +20,7 @@ class HomeController extends GetxController {
   final RxBool showGymPrompt = false.obs;
   final Rxn<GymSummaryData> gymSummary = Rxn<GymSummaryData>();
   bool _gymPromptLaunched = false;
+  late final GymService _gymService = GymService(sessionService: session);
 
   bool get isOwner {
     final rawRole = _rawRoleFromClaims(tokenPayload) ?? roleTitle.value;
@@ -89,12 +91,15 @@ class HomeController extends GetxController {
   Future<void> markGymCreated({
     required String gymId,
     required String gymName,
-    required String branchName,
+    String? description,
   }) async {
     await session.setGymId(gymId);
     showAddGymCard.value = false;
     showGymPrompt.value = false;
-    gymSummary.value = GymSummaryData(gymName: gymName, branchName: branchName);
+    gymSummary.value = GymSummaryData(
+      gymName: gymName,
+      description: description,
+    );
   }
 
   void _evaluateGymState() {
@@ -107,16 +112,41 @@ class HomeController extends GetxController {
     showAddGymCard.value = !hasGym;
     showGymPrompt.value = !hasGym && !session.isGymPromptDismissed;
     if (hasGym && gymSummary.value == null) {
-      final resolvedGymName =
-          _extractGymName(tokenPayload) ??
-          (session.gymId?.isNotEmpty ?? false
-              ? 'Gym ${session.gymId}'
-              : 'Your gym');
-      gymSummary.value = GymSummaryData(
-        gymName: resolvedGymName,
-        branchName: '',
-      );
+      _hydrateGymSummary();
     }
+  }
+
+  Future<void> _hydrateGymSummary() async {
+    // Prefer live API data; fall back to token claims if needed.
+    try {
+      final gym = await _gymService.getGymForOwner();
+      if (gym != null) {
+        final name = (gym['name'] ?? '').toString().trim();
+        final desc = gym['description']?.toString().trim();
+        gymSummary.value = GymSummaryData(
+          gymName: name.isNotEmpty ? name : 'Your gym',
+          description: (desc != null && desc.isNotEmpty) ? desc : null,
+        );
+        return;
+      }
+    } catch (_) {
+      // Ignore API errors; fall back to token claims below.
+    }
+
+    final resolvedGymName =
+        _extractGymName(tokenPayload) ??
+        (session.gymId?.isNotEmpty ?? false
+            ? 'Gym ${session.gymId}'
+            : 'Your gym');
+    final resolvedDescription =
+        tokenPayload['gym_description'] as String? ??
+        tokenPayload['gymDescription'] as String?;
+    gymSummary.value = GymSummaryData(
+      gymName: resolvedGymName,
+      description: resolvedDescription?.trim().isEmpty ?? true
+          ? null
+          : resolvedDescription!.trim(),
+    );
   }
 
   void _loadTokenPayload() {
@@ -325,8 +355,11 @@ class HomeController extends GetxController {
 }
 
 class GymSummaryData {
-  const GymSummaryData({required this.gymName, required this.branchName});
+  const GymSummaryData({
+    required this.gymName,
+    this.description,
+  });
 
   final String gymName;
-  final String branchName;
+  final String? description;
 }

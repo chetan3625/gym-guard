@@ -8,6 +8,7 @@ import 'package:azanto/Services/login_services.dart';
 import 'package:azanto/views/models/plan_option.dart';
 import 'package:azanto/views/widgets/plan_card.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -40,7 +41,7 @@ class _PlansPageState extends State<PlansPage> {
     final double cardHeight = math.min(190 * scale, 260).toDouble();
 
     return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(16, 18, 16, 118 + bottomPadding),
+      padding: EdgeInsets.fromLTRB(16.w, 18.h, 16.w, 118.h + bottomPadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -54,44 +55,48 @@ class _PlansPageState extends State<PlansPage> {
                     Text(
                       'Plans',
                       style: GoogleFonts.poppins(
-                        fontSize: 34,
+                        fontSize: 34.sp,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    SizedBox(height: 6.h),
                     Text(
                       'Create and manage membership plans for your gym.',
                       style: GoogleFonts.poppins(
-                        fontSize: 15,
+                        fontSize: 15.sp,
                         color: Colors.white.withOpacity(0.68),
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 12),
-              Flexible(
-                child: Align(
-                  alignment: Alignment.topRight,
-                  child: _CreatePlanButton(
-                    onTap: _openCreatePlanSheet,
-                    isBusy: _creating,
+              SizedBox(width: 12.w),
+              if (_plans.isNotEmpty)
+                Flexible(
+                  child: Align(
+                    alignment: Alignment.topRight,
+                    child: _CreatePlanButton(
+                      onTap: _openCreatePlanSheet,
+                      isBusy: _creating,
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
-          const SizedBox(height: 18),
+          SizedBox(height: 18.h),
           if (_loading)
-            const Center(
+            Center(
               child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 32),
-                child: CircularProgressIndicator(),
+                padding: EdgeInsets.symmetric(vertical: 32.h),
+                child: const CircularProgressIndicator(),
               ),
             )
           else if (_plans.isEmpty)
-            _EmptyState(onCreateTap: _openCreatePlanSheet, error: _loadError)
+            _EmptyState(
+              onCreateTap: _openCreatePlanSheet,
+              error: _loadError,
+            )
           else
             Column(
               children: [
@@ -111,7 +116,7 @@ class _PlansPageState extends State<PlansPage> {
                     titleFontSize: 28 * scale,
                     titleFontWeight: FontWeight.w700,
                   ),
-                  const SizedBox(height: 18),
+                  SizedBox(height: 18.h),
                 ],
               ],
             ),
@@ -145,7 +150,7 @@ class _PlansPageState extends State<PlansPage> {
               child: StatefulBuilder(
                 builder: (context, setModalState) {
                   return Container(
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 26),
+                    padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 26.h),
                     color: const Color(0xFF15171D).withOpacity(0.92),
                     child: SingleChildScrollView(
                       physics: const BouncingScrollPhysics(),
@@ -159,7 +164,7 @@ class _PlansPageState extends State<PlansPage> {
                               Text(
                                 'Create Plan',
                                 style: GoogleFonts.poppins(
-                                  fontSize: 20,
+                                  fontSize: 20.sp,
                                   fontWeight: FontWeight.w700,
                                   color: Colors.white,
                                 ),
@@ -173,20 +178,20 @@ class _PlansPageState extends State<PlansPage> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(height: 12.h),
                           _PlanField(
                             label: 'Name',
                             controller: nameCtrl,
                             hint: 'Annual Elite',
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(height: 12.h),
                           _PlanField(
                             label: 'Description',
                             controller: descCtrl,
                             hint: 'Unlimited access, PT sessions, sauna',
                             maxLines: 3,
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(height: 12.h),
                           Row(
                             children: [
                               Expanded(
@@ -197,7 +202,7 @@ class _PlansPageState extends State<PlansPage> {
                                   keyboardType: TextInputType.number,
                                 ),
                               ),
-                              const SizedBox(width: 12),
+                              SizedBox(width: 12.w),
                               Expanded(
                                 child: _PlanField(
                                   label: 'Base price (Rs)',
@@ -208,14 +213,14 @@ class _PlansPageState extends State<PlansPage> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(height: 12.h),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
                                 'Active',
                                 style: GoogleFonts.poppins(
-                                  fontSize: 15,
+                                  fontSize: 15.sp,
                                   color: Colors.white,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -229,18 +234,18 @@ class _PlansPageState extends State<PlansPage> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16.h),
                           SizedBox(
                             width: double.infinity,
-                            height: 52,
+                            height: 52.h,
                             child: ElevatedButton(
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF63D700),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
+                                  borderRadius: BorderRadius.circular(16.r),
                                 ),
                                 textStyle: GoogleFonts.poppins(
-                                  fontSize: 16,
+                                  fontSize: 16.sp,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -551,12 +556,12 @@ class _PlanField extends StatelessWidget {
         Text(
           label,
           style: GoogleFonts.poppins(
-            fontSize: 14,
+            fontSize: 14.sp,
             color: Colors.white,
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 6),
+        SizedBox(height: 6.h),
         TextField(
           controller: controller,
           keyboardType: keyboardType,
@@ -568,20 +573,20 @@ class _PlanField extends StatelessWidget {
             filled: true,
             fillColor: Colors.white.withOpacity(0.08),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(14.r),
               borderSide: BorderSide(color: Colors.white.withOpacity(0.16)),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(14.r),
               borderSide: BorderSide(color: Colors.white.withOpacity(0.16)),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(14.r),
               borderSide: const BorderSide(color: Colors.white),
             ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 14,
-              vertical: 12,
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: 14.w,
+              vertical: 12.h,
             ),
           ),
         ),
@@ -591,7 +596,10 @@ class _PlanField extends StatelessWidget {
 }
 
 class _EmptyState extends StatelessWidget {
-  const _EmptyState({required this.onCreateTap, this.error});
+  const _EmptyState({
+    required this.onCreateTap,
+    this.error,
+  });
 
   final VoidCallback onCreateTap;
   final String? error;
@@ -600,7 +608,7 @@ class _EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(18, 20, 18, 20),
+      padding: EdgeInsets.fromLTRB(18.w, 20.h, 18.w, 20.h),
       decoration: BoxDecoration(
         color: const Color(0xFF1C1E24),
         borderRadius: BorderRadius.circular(16),
@@ -612,34 +620,34 @@ class _EmptyState extends StatelessWidget {
           Text(
             'No plans yet',
             style: GoogleFonts.poppins(
-              fontSize: 18,
+              fontSize: 18.sp,
               fontWeight: FontWeight.w700,
               color: Colors.white,
             ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 6.h),
           Text(
             'Create customised plans for your members with dynamic styled cards.',
             style: GoogleFonts.poppins(
-              fontSize: 14,
+              fontSize: 14.sp,
               color: Colors.white.withOpacity(0.68),
             ),
           ),
           if (error != null && error!.isNotEmpty) ...[
-            const SizedBox(height: 8),
+            SizedBox(height: 8.h),
             Text(
               error!,
-              style: GoogleFonts.poppins(fontSize: 13, color: Colors.redAccent),
+              style: GoogleFonts.poppins(fontSize: 13.sp, color: Colors.redAccent),
             ),
           ],
-          const SizedBox(height: 14),
+          SizedBox(height: 14.h),
           SizedBox(
-            height: 46,
+            height: 46.h,
             child: OutlinedButton(
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: Color(0xFF63D700)),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(14.r),
                 ),
                 foregroundColor: Colors.white,
               ),
@@ -662,30 +670,30 @@ class _CreatePlanButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 42,
+      height: 42.h,
       child: ElevatedButton.icon(
         onPressed: isBusy ? null : onTap,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF63D700),
           foregroundColor: Colors.black,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(14.r),
           ),
           elevation: 6,
         ),
         icon: isBusy
-            ? const SizedBox(
-                height: 16,
-                width: 16,
-                child: CircularProgressIndicator(
+            ? SizedBox(
+                height: 16.h,
+                width: 16.w,
+                child: const CircularProgressIndicator(
                   strokeWidth: 2.2,
                   valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
                 ),
               )
-            : const Icon(Icons.add, size: 18),
+            : Icon(Icons.add, size: 18.sp),
         label: Text(
           isBusy ? 'Creating...' : 'New Plan',
-          style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
+          style: GoogleFonts.poppins(fontSize: 14.sp, fontWeight: FontWeight.w600),
         ),
       ),
     );

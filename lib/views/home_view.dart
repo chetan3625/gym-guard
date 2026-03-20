@@ -33,10 +33,21 @@ class HomeShell extends GetView<HomeController> {
 
   @override
   Widget build(BuildContext context) {
+    final subscriptionActive =
+        (controller.session.gymId?.isNotEmpty ?? false) ? true : false;
+
     return Scaffold(
       appBar: AzantoAppBar(
         showLogout: true,
         onLogout: () => controller.onLogout(),
+        extraActions: [
+          IconButton(
+            tooltip: 'Scan QR',
+            onPressed: () => Get.toNamed(AppRoutes.qrScanner),
+            icon: const Icon(Icons.qr_code_scanner_rounded),
+            color: Colors.white70,
+          ),
+        ],
       ),
       backgroundColor: AppColors.scaffoldDark,
       body: Stack(
@@ -92,6 +103,13 @@ class HomeShell extends GetView<HomeController> {
                               : null,
                           showAddGym: controller.shouldShowAddGymCard,
                           gymSummary: controller.gymSummary.value,
+                          statusBanner: _StatusIsland(
+                            isActive: subscriptionActive,
+                            onTap: () => Get.toNamed(
+                              AppRoutes.gymPayment,
+                              arguments: {'isActive': subscriptionActive},
+                            ),
+                          ),
                         ),
                   MembersPage(onAddMemberTap: openAddMemberScreen),
                   const InvoicesPage(),
@@ -278,4 +296,97 @@ class _NavItemData {
 
   final IconData icon;
   final String label;
+}
+
+class _StatusIsland extends StatelessWidget {
+  const _StatusIsland({required this.isActive, required this.onTap});
+
+  final bool isActive;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = isActive ? AppColors.brandGreen : const Color(0xFFFFC542);
+    final label = isActive ? 'Active' : 'Pending';
+
+    return GestureDetector(
+      onTap: onTap,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: SizedBox(
+            width: double.infinity,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.55),
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(color: accent.withOpacity(0.55)),
+                boxShadow: [
+                  BoxShadow(
+                    color: accent.withOpacity(0.18),
+                    blurRadius: 24,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: accent,
+                          boxShadow: [
+                            BoxShadow(
+                              color: accent.withOpacity(0.7),
+                              blurRadius: 10,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Status • $label',
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.25,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: accent.withOpacity(0.18),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: accent.withOpacity(0.7)),
+                    ),
+                    child: Text(
+                      'Manage',
+                      style: GoogleFonts.inter(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

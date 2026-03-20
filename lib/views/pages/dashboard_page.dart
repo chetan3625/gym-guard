@@ -17,6 +17,7 @@ class DashboardPage extends StatelessWidget {
     this.onAddGymTap,
     this.showAddGym = false,
     this.gymSummary,
+    this.statusBanner,
   });
 
   final String greeting;
@@ -28,6 +29,7 @@ class DashboardPage extends StatelessWidget {
   final VoidCallback? onAddGymTap;
   final bool showAddGym;
   final GymSummaryData? gymSummary;
+  final Widget? statusBanner;
 
   @override
   Widget build(BuildContext context) {
@@ -40,6 +42,10 @@ class DashboardPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (statusBanner != null) ...[
+              statusBanner!,
+              SizedBox(height: 12.h),
+            ],
             _GreetingCard(
               greeting: greeting,
               userName: userName,
@@ -264,7 +270,16 @@ class _KeyMetricsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
-    final crossAxisCount = width > 700 ? 3 : 2;
+    final crossAxisCount = width >= 900
+        ? 3
+        : width >= 520
+            ? 2
+            : 1;
+    final childAspectRatio = crossAxisCount == 3
+        ? 2.2
+        : crossAxisCount == 2
+            ? 1.8
+            : 3.0;
 
     return Container(
       padding: EdgeInsets.fromLTRB(12.w, 12.h, 12.w, 12.h),
@@ -281,14 +296,14 @@ class _KeyMetricsCard extends StatelessWidget {
             ),
           ),
           SizedBox(height: 10.h),
-          GridView.count(
-            shrinkWrap: true,
-            crossAxisCount: crossAxisCount,
-            mainAxisSpacing: 10.h,
-            crossAxisSpacing: 10.w,
-            childAspectRatio: 2.25,
-            physics: const NeverScrollableScrollPhysics(),
-            children: const [
+            GridView.count(
+              shrinkWrap: true,
+              crossAxisCount: crossAxisCount,
+              mainAxisSpacing: 10.h,
+              crossAxisSpacing: 10.w,
+              childAspectRatio: childAspectRatio,
+              physics: const NeverScrollableScrollPhysics(),
+              children: const [
               _MetricTile(
                 title: 'Active Members',
                 value: '154',
@@ -531,7 +546,11 @@ class _GymSummaryCard extends StatelessWidget {
                 ),
                 SizedBox(height: 4.h),
                 Text(
-                  'Gym registered',
+                  (data.description?.isNotEmpty ?? false)
+                      ? data.description!
+                      : 'Gym registered',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.inter(
                     fontSize: 13.sp,
                     color: Colors.white.withOpacity(0.76),

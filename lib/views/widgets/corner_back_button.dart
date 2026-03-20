@@ -5,7 +5,7 @@ import 'package:azanto/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-/// Shared `Stack`-positioned back button using 390x844 design coordinates.
+/// Shared `Stack`-positioned back button aligned to the top-left (AppBar leading spot).
 class ResponsiveCornerBackButton extends StatelessWidget {
   const ResponsiveCornerBackButton({
     super.key,
@@ -16,6 +16,7 @@ class ResponsiveCornerBackButton extends StatelessWidget {
     this.x = 24,
     this.y = 64,
     this.baseSize = 36,
+    this.alignToAppBar = true,
   });
 
   final VoidCallback? onTap;
@@ -25,9 +26,23 @@ class ResponsiveCornerBackButton extends StatelessWidget {
   final double x;
   final double y;
   final double baseSize;
+  final bool alignToAppBar;
 
   @override
   Widget build(BuildContext context) {
+    if (alignToAppBar) {
+      final padding = MediaQuery.viewPaddingOf(context);
+      return Positioned(
+        left: math.max(12.0, padding.left + 8),
+        top: padding.top + 8,
+        child: CornerBackButton(
+          size: baseSize,
+          onTap: onTap,
+          fallbackRoute: fallbackRoute,
+        ),
+      );
+    }
+
     final size = MediaQuery.sizeOf(context);
     final scaleX = size.width / baseWidth;
     final scaleY = size.height / baseHeight;
@@ -41,6 +56,22 @@ class ResponsiveCornerBackButton extends StatelessWidget {
         onTap: onTap,
         fallbackRoute: fallbackRoute,
       ),
+    );
+  }
+}
+
+/// Preferred alias for new usage: keeps all back buttons consistent without params.
+class AppBackButton extends StatelessWidget {
+  const AppBackButton({super.key, this.onTap, this.fallbackRoute});
+
+  final VoidCallback? onTap;
+  final String? fallbackRoute;
+
+  @override
+  Widget build(BuildContext context) {
+    return ResponsiveCornerBackButton(
+      onTap: onTap,
+      fallbackRoute: fallbackRoute,
     );
   }
 }
