@@ -155,6 +155,11 @@ class _FormContent extends StatelessWidget {
           hintText: 'Phone Number',
           icon: Icons.phone_outlined,
           keyboardType: TextInputType.phone,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(10),
+          ],
+          maxLength: 10,
         ),
         SizedBox(height: 20 * scaleY),
         Obx(
@@ -193,12 +198,16 @@ class _InputField extends StatelessWidget {
     required this.hintText,
     required this.icon,
     this.keyboardType,
+    this.inputFormatters,
+    this.maxLength,
   });
 
   final TextEditingController controller;
   final String hintText;
   final IconData icon;
   final TextInputType? keyboardType;
+  final List<TextInputFormatter>? inputFormatters;
+  final int? maxLength;
 
   @override
   Widget build(BuildContext context) {
@@ -217,6 +226,8 @@ class _InputField extends StatelessWidget {
       child: TextField(
         controller: controller,
         keyboardType: keyboardType,
+        inputFormatters: inputFormatters,
+        maxLength: maxLength,
         style: GoogleFonts.montserrat(
           color: AppColors.white,
           fontSize: 16,
@@ -235,6 +246,7 @@ class _InputField extends StatelessWidget {
             vertical: 16,
             horizontal: 6,
           ),
+          counterText: '',
         ),
       ),
     );

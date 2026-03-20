@@ -48,7 +48,7 @@ class _CashEntryPageState extends State<CashEntryPage> {
     final heightScale = size.height / 852.0;
     final scale = math
         .min(math.min(widthScale, heightScale), 1.0)
-        .clamp(0.9, 1.0);
+        .clamp(0.75, 1.0);
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -117,15 +117,7 @@ class _CashEntryPageState extends State<CashEntryPage> {
               ),
             ),
           ),
-          Positioned(
-            left: 24,
-            top: 64,
-            child: SizedBox(
-              width: 36,
-              height: 34,
-              child: CornerBackButton(size: 36, onTap: () => Get.back()),
-            ),
-          ),
+          const ResponsiveCornerBackButton(),
         ],
       ),
     );

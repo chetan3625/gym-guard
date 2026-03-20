@@ -13,7 +13,7 @@ class AppLogo extends StatelessWidget {
       width: size,
       height: size,
       child: SvgPicture.asset(
-        'assets/images/Azanto logo.svg',
+        'assets/images/azanto_logo.svg',
         fit: BoxFit.contain,
         errorBuilder: (context, error, stackTrace) => _FallbackLogo(size: size),
       ),

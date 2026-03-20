@@ -1,3 +1,4 @@
+import 'package:azanto/Services/gym_service.dart';
 import 'package:azanto/Services/login_services.dart';
 import 'package:azanto/Services/session_service.dart';
 import 'package:azanto/Services/token_refresh_manager.dart';
@@ -60,9 +61,27 @@ class LoginViewController extends GetxController {
       _printTokenOnLogin(token);
       await TokenRefreshManager.scheduleTokenRefresh();
 
+      // Verify gym status before showing success/navigating.
+      bool hasGym = false;
+      try {
+        final gym =
+            await GymService(sessionService: session).getGymForOwner();
+        hasGym = gym != null;
+      } on ApiException catch (e) {
+        // If the backend explicitly says not found/forbidden, treat as no gym.
+        if (e.statusCode == 403 || e.statusCode == 404) {
+          hasGym = false;
+        } else {
+          Get.snackbar('Could not verify gym', e.detailMessage);
+          return;
+        }
+      } catch (e) {
+        Get.snackbar('Could not verify gym', e.toString());
+        return;
+      }
+
       final message = response['message'] as String? ?? 'Login successful';
       Get.snackbar('Success', message);
-      final hasGym = session.gymId?.isNotEmpty == true;
       Get.offAllNamed(hasGym ? AppRoutes.home : AppRoutes.gymOnboarding);
     } on ApiException catch (e) {
       Get.snackbar('Login failed', e.detailMessage);

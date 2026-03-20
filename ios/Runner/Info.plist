@@ -47,5 +47,7 @@
 	<true/>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Allow Azanto to access your photos for profile avatar uploads.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Allow Azanto to use your camera for scanning QR codes.</string>
 </dict>
 </plist>

@@ -40,6 +40,10 @@ class GymApiEndpoints {
       '${GlobalVariables.apiBaseUrl}/profile/gym/onboardNewGym';
   static const String addBranch =
       '${GlobalVariables.apiBaseUrl}/profile/gym/branch/addbranch';
+
+  /// Returns the gyms owned by the authenticated user.
+  static const String getGym =
+      '${GlobalVariables.apiBaseUrl}/profile/gym/getGym';
 }
 
 class MemberProfileApiEndpoints {

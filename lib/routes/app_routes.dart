@@ -2,6 +2,7 @@ class AppRoutes {
   const AppRoutes._();
 
   static const String home = '/home';
+  static const String qrScanner = '/qr-scanner';
   static const String splash = '/';
   static const String roleSelection = '/role-selection';
   static const String authEntry = '/auth-entry';
@@ -12,4 +13,5 @@ class AppRoutes {
   static const String resetPassword = '/reset-password';
   static const String resetPasswordSuccess = '/reset-password-success';
   static const String gymOnboarding = '/gym-onboarding';
+  static const String gymPayment = '/gym-payment';
 }

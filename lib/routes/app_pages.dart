@@ -21,6 +21,8 @@ import 'package:azanto/views/verify_otp_view.dart';
 import 'package:azanto/views/reset_password_view.dart';
 import 'package:azanto/views/password_reset_success_view.dart';
 import 'package:azanto/views/gym_onboarding_view.dart';
+import 'package:azanto/views/pages/gym_payment_page.dart';
+import 'package:azanto/views/pages/qr_scanner_page.dart';
 import 'package:get/get.dart';
 
 class AppPages {
@@ -31,6 +33,16 @@ class AppPages {
       name: AppRoutes.home,
       page: () => const HomeShell(),
       binding: HomeBinding(),
+      middlewares: [AuthGuard()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.qrScanner,
+      page: () => const QrScannerPage(),
+      middlewares: [AuthGuard()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.gymPayment,
+      page: () => const GymPaymentPage(),
       middlewares: [AuthGuard()],
     ),
     GetPage<dynamic>(

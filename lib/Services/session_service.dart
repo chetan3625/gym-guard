@@ -63,13 +63,17 @@ class SessionService {
 
   String? _normalizeAccessToken(String? rawToken) {
     if (rawToken == null) return null;
-    final trimmed = rawToken.trim();
+
+    var trimmed = rawToken.trim();
     if (trimmed.isEmpty) return null;
-    const bearerPrefix = 'Bearer ';
-    if (trimmed.startsWith(bearerPrefix)) {
-      final stripped = trimmed.substring(bearerPrefix.length).trim();
-      return stripped.isEmpty ? null : stripped;
+
+    // Normalize bearer prefix regardless of case (e.g., "Bearer ", "bearer ").
+    const bearerPrefixLower = 'bearer ';
+    if (trimmed.toLowerCase().startsWith(bearerPrefixLower)) {
+      trimmed = trimmed.substring(bearerPrefixLower.length).trim();
     }
-    return trimmed;
+
+    return trimmed.isEmpty ? null : trimmed;
   }
+
 }

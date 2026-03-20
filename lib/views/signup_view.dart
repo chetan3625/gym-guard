@@ -142,6 +142,11 @@ class _FormContent extends StatelessWidget {
           hintText: 'Phone Number',
           icon: Icons.phone_outlined,
           keyboardType: TextInputType.phone,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(10),
+          ],
+          maxLength: 10,
         ),
         SizedBox(height: 14 * scaleY),
         _Label('Password', scale),
@@ -310,6 +315,8 @@ class _InputField extends StatelessWidget {
     this.obscureText = false,
     this.suffix,
     this.keyboardType,
+    this.inputFormatters,
+    this.maxLength,
   });
 
   final TextEditingController controller;
@@ -318,6 +325,8 @@ class _InputField extends StatelessWidget {
   final bool obscureText;
   final Widget? suffix;
   final TextInputType? keyboardType;
+  final List<TextInputFormatter>? inputFormatters;
+  final int? maxLength;
 
   @override
   Widget build(BuildContext context) {
@@ -337,6 +346,8 @@ class _InputField extends StatelessWidget {
         controller: controller,
         obscureText: obscureText,
         keyboardType: keyboardType,
+        inputFormatters: inputFormatters,
+        maxLength: maxLength,
         style: GoogleFonts.montserrat(
           color: AppColors.white,
           fontSize: 16,
@@ -356,6 +367,7 @@ class _InputField extends StatelessWidget {
             vertical: 16,
             horizontal: 6,
           ),
+          counterText: '',
         ),
       ),
     );
