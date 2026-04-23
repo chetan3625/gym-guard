@@ -7,20 +7,40 @@ import 'package:azanto/routes/app_routes.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:azanto/Services/member_service.dart';
+import 'package:azanto/Services/plan_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await GetStorage.init();
-  await TokenRefreshManager.initialize();
+
+  // Initialize WorkManager for background token refresh
+  try {
+    await TokenRefreshManager.initialize();
+  } catch (e, stack) {
+    debugPrint('[AUTH] WorkManager initialization failed: $e\n$stack');
+    // Continue without background refresh - foreground refresh will still work
+  }
+
   final session = Get.put(SessionService(), permanent: true);
   Get.put(ProfileLocalPrefsService(), permanent: true);
+  Get.lazyPut(() => MemberService());
+  Get.lazyPut(() => PlanService());
   _printTokenIfLoggedIn(context: 'app_start', session: session);
+
+  // Schedule background refresh if logged in
   if (session.isLoggedIn) {
-    await TokenRefreshManager.scheduleTokenRefresh();
+    try {
+      await TokenRefreshManager.scheduleTokenRefresh();
+    } catch (e, stack) {
+      debugPrint('[AUTH] Failed to schedule token refresh: $e\n$stack');
+    }
   }
+
   runApp(const AzantoApp());
 }
 
@@ -63,7 +83,6 @@ class _AzantoAppState extends State<AzantoApp> {
         return GetMaterialApp(
           debugShowCheckedModeBanner: false,
           title: 'Azanto',
-          builder: (context, child) => SafeArea(child: child!),
           theme: ThemeData(
             useMaterial3: false,
             scaffoldBackgroundColor: AppColors.scaffoldDark,

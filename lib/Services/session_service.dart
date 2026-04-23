@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:azanto/core/auth/auth_role.dart';
 import 'package:get_storage/get_storage.dart';
 
 /// Lightweight session store for auth state.
@@ -6,20 +9,46 @@ class SessionService {
   static const _refreshTokenKey = 'refresh_token';
   static const _loggedKey = 'is_logged_in';
   static const _gymIdKey = 'gym_id';
+  static const _branchIdKey = 'branch_id';
   static const _gymPromptDismissedKey = 'gym_prompt_dismissed';
+  static const _roleKey = 'auth_role';
+  static const _authSnapshotKey = 'last_auth_response';
 
   final GetStorage _box = GetStorage();
 
   bool get isLoggedIn {
-    final isFlagSet = _box.read(_loggedKey) == true;
-    final savedToken = _box.read<String>(_tokenKey) ?? '';
-    return isFlagSet || savedToken.isNotEmpty;
+    final savedToken = normalizedToken;
+    return savedToken != null && savedToken.isNotEmpty;
   }
 
   String? get token => _box.read<String>(_tokenKey);
   String? get refreshToken => _box.read<String>(_refreshTokenKey);
   String? get gymId => _box.read<String>(_gymIdKey);
+  String? get branchId => _box.read<String>(_branchIdKey);
   bool get isGymPromptDismissed => _box.read(_gymPromptDismissedKey) == true;
+  String? get authenticatedRole {
+    final storedRole = AuthRole.normalize(_box.read<String>(_roleKey));
+    if (storedRole != null) {
+      return storedRole;
+    }
+
+    final snapshotRole = AuthRole.extractFromPayload(lastAuthResponse);
+    if (snapshotRole != null) {
+      return snapshotRole;
+    }
+
+    return _roleFromToken(token);
+  }
+
+  bool get isOwner => authenticatedRole == AuthRole.owner;
+  bool get isMember => authenticatedRole == AuthRole.member;
+  Map<String, dynamic>? get lastAuthResponse {
+    final stored = _box.read(_authSnapshotKey);
+    if (stored is Map<String, dynamic>) return stored;
+    if (stored is Map) return Map<String, dynamic>.from(stored);
+    return null;
+  }
+
   String? get normalizedToken => _normalizeAccessToken(token);
   String? get bearerToken {
     final normalized = normalizedToken;
@@ -27,13 +56,33 @@ class SessionService {
     return 'Bearer $normalized';
   }
 
-  Future<void> startSession({String? token, String? refreshToken}) async {
+  Future<void> startSession({
+    String? token,
+    String? refreshToken,
+    String? role,
+    Map<String, dynamic>? authResponse,
+  }) async {
     final normalizedToken = _normalizeAccessToken(token);
     if (normalizedToken != null && normalizedToken.isNotEmpty) {
       await _box.write(_tokenKey, normalizedToken);
     }
     if (refreshToken != null && refreshToken.isNotEmpty) {
       await _box.write(_refreshTokenKey, refreshToken);
+    }
+    final normalizedRole =
+        AuthRole.normalize(role) ?? AuthRole.extractFromPayload(authResponse);
+    if (normalizedRole != null) {
+      await _box.write(_roleKey, normalizedRole);
+      await _box.write('selected_role', normalizedRole);
+    }
+    if (authResponse != null) {
+      await _box.write(
+        _authSnapshotKey,
+        _sanitizeAuthResponse(
+          authResponse,
+          fallbackRole: normalizedRole ?? authenticatedRole,
+        ),
+      );
     }
     await _box.write(_loggedKey, true);
   }
@@ -49,12 +98,20 @@ class SessionService {
     await _box.remove(_refreshTokenKey);
     await _box.remove(_loggedKey);
     await _box.remove(_gymIdKey);
+    await _box.remove(_branchIdKey);
     await _box.remove(_gymPromptDismissedKey);
+    await _box.remove(_roleKey);
+    await _box.remove(_authSnapshotKey);
   }
 
   Future<void> setGymId(String? gymId) async {
     if (gymId == null || gymId.trim().isEmpty) return;
     await _box.write(_gymIdKey, gymId.trim());
+  }
+
+  Future<void> setBranchId(String? branchId) async {
+    if (branchId == null || branchId.trim().isEmpty) return;
+    await _box.write(_branchIdKey, branchId.trim());
   }
 
   Future<void> setGymPromptDismissed(bool dismissed) async {
@@ -76,4 +133,47 @@ class SessionService {
     return trimmed.isEmpty ? null : trimmed;
   }
 
+  Map<String, dynamic> _sanitizeAuthResponse(
+    Map<String, dynamic> response, {
+    String? fallbackRole,
+  }) {
+    final snapshot = <String, dynamic>{};
+
+    final status = response['status'];
+    if (status != null) {
+      snapshot['status'] = status.toString();
+    }
+
+    final message = response['message'];
+    if (message != null) {
+      snapshot['message'] = message.toString();
+    }
+
+    final resolvedRole = AuthRole.extractFromPayload(response) ?? fallbackRole;
+    if (resolvedRole != null) {
+      snapshot['role'] = resolvedRole;
+    }
+
+    return snapshot;
+  }
+
+  String? _roleFromToken(String? rawToken) {
+    final normalized = _normalizeAccessToken(rawToken);
+    if (normalized == null || normalized.isEmpty) return null;
+
+    try {
+      final parts = normalized.split('.');
+      if (parts.length < 2) {
+        return null;
+      }
+
+      final payload = utf8.decode(
+        base64Url.decode(base64Url.normalize(parts[1])),
+      );
+      final decoded = jsonDecode(payload);
+      return AuthRole.extractFromPayload(decoded);
+    } catch (_) {
+      return null;
+    }
+  }
 }

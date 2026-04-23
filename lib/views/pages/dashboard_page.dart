@@ -15,6 +15,7 @@ class DashboardPage extends StatelessWidget {
     required this.onProfileTap,
     required this.onAddMemberTap,
     this.onAddGymTap,
+    this.onGymTap,
     this.showAddGym = false,
     this.gymSummary,
     this.statusBanner,
@@ -27,6 +28,7 @@ class DashboardPage extends StatelessWidget {
   final VoidCallback onProfileTap;
   final VoidCallback onAddMemberTap;
   final VoidCallback? onAddGymTap;
+  final VoidCallback? onGymTap;
   final bool showAddGym;
   final GymSummaryData? gymSummary;
   final Widget? statusBanner;
@@ -84,7 +86,7 @@ class DashboardPage extends StatelessWidget {
             const _KeyMetricsCard(),
             SizedBox(height: 16.h),
             if (gymSummary != null) ...[
-              _GymSummaryCard(data: gymSummary!),
+              _GymSummaryCard(data: gymSummary!, onTap: onGymTap),
               SizedBox(height: 12.h),
             ] else if (showAddGym) ...[
               _AddGymCard(onTap: onAddGymTap),
@@ -296,14 +298,14 @@ class _KeyMetricsCard extends StatelessWidget {
             ),
           ),
           SizedBox(height: 10.h),
-            GridView.count(
-              shrinkWrap: true,
-              crossAxisCount: crossAxisCount,
-              mainAxisSpacing: 10.h,
-              crossAxisSpacing: 10.w,
-              childAspectRatio: childAspectRatio,
-              physics: const NeverScrollableScrollPhysics(),
-              children: const [
+          GridView.count(
+            shrinkWrap: true,
+            crossAxisCount: crossAxisCount,
+            mainAxisSpacing: 10.h,
+            crossAxisSpacing: 10.w,
+            childAspectRatio: childAspectRatio,
+            physics: const NeverScrollableScrollPhysics(),
+            children: const [
               _MetricTile(
                 title: 'Active Members',
                 value: '154',
@@ -502,65 +504,99 @@ class _AddGymCard extends StatelessWidget {
 }
 
 class _GymSummaryCard extends StatelessWidget {
-  const _GymSummaryCard({required this.data});
+  const _GymSummaryCard({
+    required this.data,
+    this.onTap,
+  });
 
   final GymSummaryData data;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(16.w),
-      decoration: _cardDecoration(
-        borderColor: AppColors.brandGreen.withOpacity(0.5),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 54.w,
-            height: 54.w,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.brandGreen.withOpacity(0.15),
-              border: Border.all(color: AppColors.brandGreen.withOpacity(0.7)),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(16.w),
+        decoration: _cardDecoration(
+          borderColor: AppColors.brandGreen.withOpacity(0.5),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 54.w,
+              height: 54.w,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.brandGreen.withOpacity(0.15),
+                border:
+                    Border.all(color: AppColors.brandGreen.withOpacity(0.7)),
+              ),
+              child: Icon(
+                Icons.home_work_rounded,
+                color: AppColors.brandGreen,
+                size: 28.sp,
+              ),
             ),
-            child: Icon(
-              Icons.home_work_rounded,
-              color: AppColors.brandGreen,
-              size: 28.sp,
+            SizedBox(width: 14.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    data.gymName,
+                    style: GoogleFonts.montserrat(
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                  SizedBox(height: 4.h),
+                  Text(
+                    (data.email?.isNotEmpty ?? false)
+                        ? data.email!
+                        : 'Gym registered',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      fontSize: 13.sp,
+                      color: Colors.white.withOpacity(0.82),
+                    ),
+                  ),
+                  if (data.description?.isNotEmpty ?? false) ...[
+                    SizedBox(height: 3.h),
+                    Text(
+                      data.description!,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        fontSize: 12.sp,
+                        color: Colors.white.withOpacity(0.64),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
-          ),
-          SizedBox(width: 14.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            Column(
               children: [
-                Text(
-                  data.gymName,
-                  style: GoogleFonts.montserrat(
-                    fontSize: 18.sp,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
+                Icon(
+                  Icons.check_circle,
+                  color: AppColors.brandGreen,
+                  size: 22.sp,
                 ),
-                SizedBox(height: 4.h),
-                Text(
-                  (data.description?.isNotEmpty ?? false)
-                      ? data.description!
-                      : 'Gym registered',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
-                    fontSize: 13.sp,
-                    color: Colors.white.withOpacity(0.76),
-                  ),
+                SizedBox(height: 10.h),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: Colors.white70,
+                  size: 24.sp,
                 ),
               ],
             ),
-          ),
-          Icon(Icons.check_circle, color: AppColors.brandGreen, size: 22.sp),
-        ],
+          ],
+        ),
       ),
     );
   }

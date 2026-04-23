@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui';
 import 'dart:convert';
 
+import 'package:azanto/Services/login_services.dart';
 import 'package:azanto/views/widgets/corner_back_button.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -14,19 +15,37 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:azanto/Services/session_service.dart';
 import 'package:pdf/pdf.dart';
 
-class PaymentSuccessPage extends StatelessWidget {
+class PaymentSuccessPage extends StatefulWidget {
   const PaymentSuccessPage({
     super.key,
     required this.name,
     required this.phone,
     required this.amount,
     required this.planTitle,
+    required this.gymId,
+    required this.planId,
+    required this.userId,
+    required this.paymentMode,
+    required this.activationAmount,
   });
 
   final String name;
   final String phone;
   final String amount;
   final String planTitle;
+  final String gymId;
+  final String planId;
+  final String userId;
+  final String paymentMode;
+  final double activationAmount;
+
+  @override
+  State<PaymentSuccessPage> createState() => _PaymentSuccessPageState();
+}
+
+class _PaymentSuccessPageState extends State<PaymentSuccessPage> {
+  final ApiServices _apiServices = ApiServices();
+  bool _isActivating = false;
 
   @override
   Widget build(BuildContext context) {
@@ -83,15 +102,16 @@ class PaymentSuccessPage extends StatelessWidget {
                   const Spacer(),
                   _SuccessCard(
                     scale: scale,
-                    name: name,
-                    phone: phone,
-                    amount: amount,
-                    planTitle: planTitle,
+                    name: widget.name,
+                    phone: widget.phone,
+                    amount: widget.amount,
+                    planTitle: widget.planTitle,
                   ),
                   SizedBox(height: 28 * scale),
                   _SlideToActivate(
                     scale: scale,
-                    onCompleted: () => Get.offAllNamed('/dashboard'),
+                    isLoading: _isActivating,
+                    onCompleted: _activateMembership,
                   ),
                   SizedBox(height: 14 * scale),
                   _SecondaryButton(
@@ -99,10 +119,10 @@ class PaymentSuccessPage extends StatelessWidget {
                     scale: scale,
                     onTap: () => _shareReceipt(
                       context: context,
-                      memberName: name,
-                      phone: phone,
-                      amount: amount,
-                      planTitle: planTitle,
+                      memberName: widget.name,
+                      phone: widget.phone,
+                      amount: widget.amount,
+                      planTitle: widget.planTitle,
                     ),
                   ),
                   SizedBox(height: 24 * scale),
@@ -113,6 +133,55 @@ class PaymentSuccessPage extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _activateMembership() async {
+    if (_isActivating) return;
+
+    setState(() => _isActivating = true);
+
+    try {
+      final response = await _apiServices.purchaseMembership(
+        gymId: widget.gymId,
+        planId: widget.planId,
+        userId: widget.userId,
+        amount: widget.activationAmount,
+        paymentMode: widget.paymentMode,
+      );
+
+      debugPrint('=== MEMBERSHIP ACTIVATED RESPONSE ===');
+      debugPrint(const JsonEncoder.withIndent('  ').convert(response));
+      debugPrint('=====================================');
+
+      if (!mounted) return;
+
+      Get.snackbar(
+        'Membership activated',
+        response['message']?.toString() ?? 'Membership activated successfully',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      Get.offAllNamed('/dashboard');
+    } on ApiException catch (e) {
+      debugPrint('Membership activation failed: ${e.detailMessage}');
+      if (!mounted) return;
+      Get.snackbar(
+        'Activation failed',
+        e.detailMessage,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      debugPrint('Membership activation unexpected error: $e');
+      if (!mounted) return;
+      Get.snackbar(
+        'Activation failed',
+        'Something went wrong while activating membership',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isActivating = false);
+      }
+    }
   }
 }
 
@@ -462,23 +531,6 @@ class _DetailRow extends StatelessWidget {
   }
 }
 
-class _PrimaryButton extends StatelessWidget {
-  const _PrimaryButton({
-    required this.label,
-    required this.scale,
-    required this.onTap,
-  });
-
-  final String label;
-  final double scale;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return const SizedBox.shrink();
-  }
-}
-
 class _SecondaryButton extends StatelessWidget {
   const _SecondaryButton({
     required this.label,
@@ -527,10 +579,15 @@ class _SecondaryButton extends StatelessWidget {
 }
 
 class _SlideToActivate extends StatelessWidget {
-  const _SlideToActivate({required this.scale, required this.onCompleted});
+  const _SlideToActivate({
+    required this.scale,
+    required this.onCompleted,
+    required this.isLoading,
+  });
 
   final double scale;
-  final VoidCallback onCompleted;
+  final Future<void> Function() onCompleted;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -543,7 +600,7 @@ class _SlideToActivate extends StatelessWidget {
         color: Colors.white,
         size: 28 * scale,
       ),
-      text: 'Slide to Activate',
+      text: isLoading ? 'Activating Membership...' : 'Slide to Activate',
       textStyle: GoogleFonts.montserrat(
         fontSize: 17 * scale,
         fontWeight: FontWeight.w600,
@@ -551,7 +608,7 @@ class _SlideToActivate extends StatelessWidget {
       ),
       borderRadius: 24 * scale,
       onSubmit: () async {
-        onCompleted();
+        await onCompleted();
       },
     );
   }

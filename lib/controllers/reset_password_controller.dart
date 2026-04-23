@@ -1,5 +1,6 @@
 import 'package:azanto/Services/login_services.dart';
 import 'package:azanto/routes/app_routes.dart';
+import 'package:azanto/utils/backend_error_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -51,6 +52,9 @@ class ResetPasswordController extends GetxController {
       Get.snackbar('Success', message);
       Get.toNamed(AppRoutes.resetPasswordSuccess);
     } on ApiException catch (e) {
+      if (await BackendErrorWidgets.handleApiException(e)) {
+        return;
+      }
       Get.snackbar('Failed', e.detailMessage);
     } catch (e) {
       Get.snackbar('Error', e.toString());

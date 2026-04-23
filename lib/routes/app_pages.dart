@@ -8,6 +8,7 @@ import 'package:azanto/bindings/splash_binding.dart';
 import 'package:azanto/bindings/verify_otp_binding.dart';
 import 'package:azanto/bindings/reset_password_binding.dart';
 import 'package:azanto/bindings/gym_onboarding_binding.dart';
+import 'package:azanto/core/auth/auth_role.dart';
 import 'package:azanto/routes/app_routes.dart';
 import 'package:azanto/routes/middleware/auth_guard.dart';
 import 'package:azanto/views/auth_entry_view.dart';
@@ -21,9 +22,15 @@ import 'package:azanto/views/verify_otp_view.dart';
 import 'package:azanto/views/reset_password_view.dart';
 import 'package:azanto/views/password_reset_success_view.dart';
 import 'package:azanto/views/gym_onboarding_view.dart';
+import 'package:azanto/Memberside/View/member_dashboard.dart';
+import 'package:azanto/views/pages/backend_error_screen.dart';
 import 'package:azanto/views/pages/gym_payment_page.dart';
 import 'package:azanto/views/pages/qr_scanner_page.dart';
 import 'package:get/get.dart';
+import 'package:azanto/views/pages/members/search_member_view.dart';
+import 'package:azanto/bindings/search_member_binding.dart';
+import 'package:azanto/views/pages/members/member_plan_selection_view.dart';
+import 'package:azanto/bindings/member_plan_selection_binding.dart';
 
 class AppPages {
   const AppPages._();
@@ -33,17 +40,27 @@ class AppPages {
       name: AppRoutes.home,
       page: () => const HomeShell(),
       binding: HomeBinding(),
-      middlewares: [AuthGuard()],
+      middlewares: [
+        AuthGuard(allowedRoles: <String>{AuthRole.owner}),
+      ],
     ),
     GetPage<dynamic>(
       name: AppRoutes.qrScanner,
       page: () => const QrScannerPage(),
-      middlewares: [AuthGuard()],
+      middlewares: [
+        AuthGuard(allowedRoles: <String>{AuthRole.owner}),
+      ],
     ),
     GetPage<dynamic>(
       name: AppRoutes.gymPayment,
       page: () => const GymPaymentPage(),
-      middlewares: [AuthGuard()],
+      middlewares: [
+        AuthGuard(allowedRoles: <String>{AuthRole.owner}),
+      ],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.backendError,
+      page: () => const BackendErrorScreen(),
     ),
     GetPage<dynamic>(
       name: AppRoutes.splash,
@@ -93,7 +110,32 @@ class AppPages {
       name: AppRoutes.gymOnboarding,
       page: () => const GymOnboardingScreen(),
       binding: GymOnboardingBinding(),
-      middlewares: [AuthGuard()],
+      middlewares: [
+        AuthGuard(allowedRoles: <String>{AuthRole.owner}),
+      ],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.searchMember,
+      page: () => const SearchMemberView(),
+      binding: SearchMemberBinding(),
+      middlewares: [
+        AuthGuard(allowedRoles: <String>{AuthRole.owner}),
+      ],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.memberPlanSelection,
+      page: () => const MemberPlanSelectionView(),
+      binding: MemberPlanSelectionBinding(),
+      middlewares: [
+        AuthGuard(allowedRoles: <String>{AuthRole.owner}),
+      ],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.memberDashboard,
+      page: () => const MemberDashboardScreen(),
+      middlewares: [
+        AuthGuard(allowedRoles: <String>{AuthRole.member}),
+      ],
     ),
   ];
 }

@@ -3,7 +3,7 @@ import 'dart:ui';
 import 'package:azanto/controllers/home_controller.dart';
 import 'package:azanto/core/theme/app_colors.dart';
 import 'package:azanto/routes/app_routes.dart';
-import 'package:azanto/utils/appbar.dart';
+import 'package:azanto/views/widgets/common_app_bar.dart';
 import 'package:azanto/views/pages/dashboard_page.dart';
 import 'package:azanto/views/pages/invoices_page.dart';
 import 'package:azanto/views/pages/members_page.dart';
@@ -101,6 +101,7 @@ class HomeShell extends GetView<HomeController> {
                           onAddGymTap: controller.isOwner
                               ? () => Get.toNamed(AppRoutes.gymOnboarding)
                               : null,
+                          onGymTap: controller.openGymDetails,
                           showAddGym: controller.shouldShowAddGymCard,
                           gymSummary: controller.gymSummary.value,
                           statusBanner: _StatusIsland(
@@ -180,10 +181,11 @@ class _GlassBottomBar extends StatelessWidget {
           decoration: BoxDecoration(
             color: const Color(0xEF17191F),
             borderRadius: BorderRadius.circular(radius),
-            border: Border.all(color: Colors.white.withOpacity(0.06)),
+            border:
+                Border.all(color: const Color.fromRGBO(255, 255, 255, 0.06)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.45),
+                color: const Color.fromRGBO(0, 0, 0, 0.45),
                 blurRadius: 18,
                 offset: const Offset(0, 10),
               ),
@@ -240,23 +242,23 @@ class _BottomItem extends StatelessWidget {
         padding: padding,
         decoration: BoxDecoration(
           color: isActive
-              ? AppColors.brandGreen.withOpacity(0.12)
+              ? const Color.fromRGBO(99, 215, 0, 0.12)
               : const Color(0xFF191B22),
           borderRadius: BorderRadius.circular(radius),
           border: Border.all(
             color: isActive
-                ? AppColors.brandGreen.withOpacity(0.75)
-                : Colors.white.withOpacity(0.04),
+                ? const Color.fromRGBO(99, 215, 0, 0.75)
+                : const Color.fromRGBO(255, 255, 255, 0.04),
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.35),
+              color: const Color.fromRGBO(0, 0, 0, 0.35),
               blurRadius: 10,
               offset: const Offset(0, 6),
             ),
             if (isActive)
               BoxShadow(
-                color: AppColors.brandGreen.withOpacity(0.28),
+                color: const Color.fromRGBO(99, 215, 0, 0.28),
                 blurRadius: 18,
                 spreadRadius: 1,
               ),
@@ -279,9 +281,8 @@ class _BottomItem extends StatelessWidget {
               style: GoogleFonts.poppins(
                 fontSize: fontSize,
                 fontWeight: FontWeight.w500,
-                color: isActive
-                    ? AppColors.brandGreen
-                    : const Color(0xFFC3C5CC),
+                color:
+                    isActive ? AppColors.brandGreen : const Color(0xFFC3C5CC),
               ),
             ),
           ],
@@ -320,12 +321,13 @@ class _StatusIsland extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.55),
+                color: const Color.fromRGBO(0, 0, 0, 0.55),
                 borderRadius: BorderRadius.circular(28),
-                border: Border.all(color: accent.withOpacity(0.55)),
+                border:
+                    Border.all(color: const Color.fromRGBO(255, 197, 66, 0.55)),
                 boxShadow: [
                   BoxShadow(
-                    color: accent.withOpacity(0.18),
+                    color: const Color.fromRGBO(255, 197, 66, 0.18),
                     blurRadius: 24,
                     offset: const Offset(0, 10),
                   ),
@@ -345,7 +347,7 @@ class _StatusIsland extends StatelessWidget {
                           color: accent,
                           boxShadow: [
                             BoxShadow(
-                              color: accent.withOpacity(0.7),
+                              color: const Color.fromRGBO(255, 197, 66, 0.7),
                               blurRadius: 10,
                               offset: const Offset(0, 3),
                             ),
@@ -368,9 +370,10 @@ class _StatusIsland extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: accent.withOpacity(0.18),
+                      color: const Color.fromRGBO(255, 197, 66, 0.18),
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: accent.withOpacity(0.7)),
+                      border: Border.all(
+                          color: const Color.fromRGBO(255, 197, 66, 0.7)),
                     ),
                     child: Text(
                       'Manage',

@@ -3,7 +3,10 @@ import 'dart:typed_data';
 
 import 'package:azanto/Services/login_services.dart';
 import 'package:azanto/Services/session_service.dart';
+import 'package:azanto/Services/token_refresh_service.dart';
 import 'package:azanto/core/config/global_variables.dart';
+import 'package:azanto/models/profile_model.dart';
+import 'package:azanto/utils/api_response_logger.dart';
 import 'package:http/http.dart' as http;
 
 class AvatarPayload {
@@ -17,20 +20,34 @@ class AvatarPayload {
 
 class ProfileService {
   ProfileService({SessionService? sessionService})
-    : _sessionService = sessionService ?? SessionService();
+      : _sessionService = sessionService ?? SessionService();
 
   final SessionService _sessionService;
 
-  Future<Map<String, dynamic>> getProfile() async {
+  Future<ProfileModel> getProfile() async {
     final authorization = _requireAuthorizationHeader();
-    final response = await http.get(
+    http.Response response = await http.get(
       Uri.parse(MemberProfileApiEndpoints.getProfile),
       headers: _jsonHeaders(authorization),
     );
 
+    if (_isAuthError(response.statusCode)) {
+      final refreshed = await TokenRefreshService(
+        sessionService: _sessionService,
+      ).refreshToken();
+      final newAuthorization = _sessionService.bearerToken?.trim() ?? '';
+      if (refreshed && newAuthorization.isNotEmpty) {
+        response = await http.get(
+          Uri.parse(MemberProfileApiEndpoints.getProfile),
+          headers: _jsonHeaders(newAuthorization),
+        );
+      }
+    }
+
     final decoded = _decodeResponseBody(response.body);
+    ApiResponseLogger.logResponse('Get Profile API', response);
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      return _extractMap(decoded);
+      return ProfileModel.fromJson(_normalizeProfileData(_extractMap(decoded)));
     }
 
     throw ApiException(
@@ -40,17 +57,42 @@ class ProfileService {
     );
   }
 
-  Future<String> updateProfile(Map<String, dynamic> profilePayload) async {
+  Future<ProfileModel> updateProfile(
+      Map<String, dynamic> profilePayload) async {
     final authorization = _requireBearerAuthorizationHeader();
-    final response = await http.patch(
+    http.Response response = await http.patch(
       Uri.parse(MemberProfileApiEndpoints.updateProfile),
       headers: _jsonHeaders(authorization),
       body: jsonEncode(profilePayload),
     );
 
+    if (_isAuthError(response.statusCode)) {
+      final refreshed = await TokenRefreshService(
+        sessionService: _sessionService,
+      ).refreshToken();
+      final newAuthorization = _sessionService.bearerToken?.trim() ?? '';
+      if (refreshed && newAuthorization.isNotEmpty) {
+        response = await http.patch(
+          Uri.parse(MemberProfileApiEndpoints.updateProfile),
+          headers: _jsonHeaders(newAuthorization),
+          body: jsonEncode(profilePayload),
+        );
+      }
+    }
+
     final decoded = _decodeResponseBody(response.body);
+    ApiResponseLogger.logResponse('Update Profile API', response);
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      return _extractMessage(decoded, fallback: 'Profile updated');
+      final responseMap = _extractMap(decoded);
+      if (responseMap.isEmpty) {
+        return ProfileModel.fromJson(profilePayload);
+      }
+      return ProfileModel.fromJson(
+        _normalizeProfileData({
+          ...profilePayload,
+          ...responseMap,
+        }),
+      );
     }
 
     throw ApiException(
@@ -72,6 +114,11 @@ class ProfileService {
     final streamedResponse = await request.send();
     final response = await http.Response.fromStream(streamedResponse);
     final decoded = _decodeResponseBody(response.body);
+    ApiResponseLogger.logResponse(
+      'Upload Avatar API',
+      response,
+      uri: request.url,
+    );
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return _extractMessage(decoded, fallback: 'Avatar uploaded');
@@ -90,6 +137,7 @@ class ProfileService {
       Uri.parse(MemberProfileApiEndpoints.getAvatar),
       headers: {'Authorization': authorization},
     );
+    ApiResponseLogger.logResponse('Get Avatar API', response);
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
       final decoded = _decodeResponseBody(response.body);
@@ -111,8 +159,7 @@ class ProfileService {
     }
     if (decoded is Map) {
       final map = Map<String, dynamic>.from(decoded);
-      final urlCandidate =
-          map['url'] ??
+      final urlCandidate = map['url'] ??
           map['avatar'] ??
           map['avatar_url'] ??
           map['image'] ??
@@ -172,6 +219,16 @@ class ProfileService {
     return <String, dynamic>{};
   }
 
+  Map<String, dynamic> _normalizeProfileData(Map<String, dynamic> payload) {
+    if (payload['data'] is Map) {
+      return Map<String, dynamic>.from(payload['data'] as Map);
+    }
+    if (payload['profile'] is Map) {
+      return Map<String, dynamic>.from(payload['profile'] as Map);
+    }
+    return payload;
+  }
+
   String _extractMessage(dynamic payload, {required String fallback}) {
     if (payload is String && payload.trim().isNotEmpty) {
       return payload.trim();
@@ -210,4 +267,6 @@ class ProfileService {
     }
     return '${GlobalVariables.apiHost}/$trimmed';
   }
+
+  bool _isAuthError(int statusCode) => statusCode == 401 || statusCode == 403;
 }

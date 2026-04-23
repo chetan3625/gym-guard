@@ -14,4 +14,9 @@ class AppRoutes {
   static const String resetPasswordSuccess = '/reset-password-success';
   static const String gymOnboarding = '/gym-onboarding';
   static const String gymPayment = '/gym-payment';
+  static const String backendError = '/backend-error';
+  static const String searchMember = '/search-member';
+  static const String memberPlanSelection = '/member-plan-selection';
+  // Member dashboard (dummy until full member screens are built)
+  static const String memberDashboard = '/member-dashboard';
 }

@@ -4,6 +4,7 @@ import 'package:azanto/Services/login_services.dart';
 import 'package:azanto/Services/session_service.dart';
 import 'package:azanto/Services/token_refresh_service.dart';
 import 'package:azanto/core/config/global_variables.dart';
+import 'package:azanto/utils/api_response_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -72,6 +73,7 @@ class BranchService {
     }
 
     final decoded = _decodeResponseBody(response.body);
+    ApiResponseLogger.logResponse('Create Branch API', response);
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       if (decoded is Map<String, dynamic>) return decoded;
@@ -105,8 +107,11 @@ class BranchService {
     required TimeOfDay openingTime,
     required TimeOfDay closingTime,
   }) {
-    String _formatTime(TimeOfDay t) =>
-        '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+    String formatTime(TimeOfDay t) {
+      final hour = t.hour.toString().padLeft(2, '0');
+      final minute = t.minute.toString().padLeft(2, '0');
+      return '$hour:$minute:00.000Z';
+    }
 
     return _client.post(
       Uri.parse(GymApiEndpoints.addBranch),
@@ -125,9 +130,9 @@ class BranchService {
         'latitude': latitude,
         'longitude': longitude,
         'is_active': true,
-        // Backend expects HH:mm, not full ISO timestamps.
-        'opening_time': _formatTime(openingTime),
-        'closing_time': _formatTime(closingTime),
+        // Backend expects the time in "HH:mm:ss.SSSZ" format
+        'opening_time': formatTime(openingTime),
+        'closing_time': formatTime(closingTime),
         'created_at': DateTime.now().toUtc().toIso8601String(),
       }),
     );

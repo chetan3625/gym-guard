@@ -15,11 +15,15 @@ class CashEntryPage extends StatefulWidget {
     required this.planOption,
     required this.name,
     required this.phone,
+    required this.userId,
+    required this.gymId,
   });
 
   final PlanOption planOption;
   final String name;
   final String phone;
+  final String userId;
+  final String gymId;
 
   @override
   State<CashEntryPage> createState() => _CashEntryPageState();
@@ -363,6 +367,7 @@ class _CashEntryPageState extends State<CashEntryPage> {
 
   void _onConfirm() {
     String amountText;
+    double activationAmount;
     if (_paymentType == 'cash') {
       final amount = _amountController.text.trim();
       if (amount.isEmpty) {
@@ -373,7 +378,17 @@ class _CashEntryPageState extends State<CashEntryPage> {
         );
         return;
       }
+      final parsedAmount = double.tryParse(amount);
+      if (parsedAmount == null) {
+        Get.snackbar(
+          'Payment',
+          'Please enter a valid cash amount',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return;
+      }
       amountText = '₹$amount';
+      activationAmount = parsedAmount;
     } else {
       final upiId = _upiIdController.text.trim();
       final upiTxn = _upiTxnController.text.trim();
@@ -386,6 +401,15 @@ class _CashEntryPageState extends State<CashEntryPage> {
         return;
       }
       amountText = widget.planOption.price;
+      activationAmount = _parsePlanAmount(widget.planOption.price);
+      if (activationAmount <= 0) {
+        Get.snackbar(
+          'Payment',
+          'Unable to read the selected plan amount',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return;
+      }
     }
 
     Get.to(
@@ -394,9 +418,19 @@ class _CashEntryPageState extends State<CashEntryPage> {
         phone: widget.phone,
         amount: amountText,
         planTitle: widget.planOption.title,
+        gymId: widget.gymId,
+        planId: widget.planOption.id,
+        userId: widget.userId,
+        paymentMode: _paymentType,
+        activationAmount: activationAmount,
       ),
       transition: Transition.downToUp,
     );
+  }
+
+  double _parsePlanAmount(String value) {
+    final normalized = value.replaceAll(RegExp(r'[^0-9.]'), '');
+    return double.tryParse(normalized) ?? 0;
   }
 }
 

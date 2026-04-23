@@ -1,5 +1,6 @@
 import 'package:azanto/Services/login_services.dart';
 import 'package:azanto/routes/app_routes.dart';
+import 'package:azanto/utils/backend_error_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -18,7 +19,7 @@ class ForgotPasswordController extends GetxController {
   }
 
   Future<void> onSendCodeTap() async {
-    final phoneDigits = phoneController.text.replaceAll(RegExp(r'\\D'), '');
+    final phoneDigits = phoneController.text.replaceAll(RegExp(r'\D'), '');
 
     if (phoneDigits.length < 10 || phoneDigits.length > 15) {
       Get.snackbar(
@@ -35,7 +36,7 @@ class ForgotPasswordController extends GetxController {
       final message = response['message'] as String? ?? 'Code sent';
       final otp = response['otp']?.toString();
 
-      print('Request OTP response: $response');
+      debugPrint('Request OTP response: $response');
       final display = otp != null && otp.isNotEmpty
           ? '$message (OTP: $otp)'
           : message;
@@ -46,6 +47,9 @@ class ForgotPasswordController extends GetxController {
         arguments: {'phone': phoneDigits, 'otp': otp},
       );
     } on ApiException catch (e) {
+      if (await BackendErrorWidgets.handleApiException(e)) {
+        return;
+      }
       Get.snackbar('Failed', e.detailMessage);
     } catch (e) {
       Get.snackbar('Error', e.toString());

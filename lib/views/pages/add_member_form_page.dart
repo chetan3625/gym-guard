@@ -1,9 +1,11 @@
 import 'dart:math' as math;
-import 'dart:ui';
 
+import 'package:azanto/Services/login_services.dart';
 import 'package:azanto/views/pages/select_plan_page.dart';
 import 'package:azanto/views/widgets/corner_back_button.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'dart:ui';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -17,12 +19,10 @@ class AddMemberFormPage extends StatefulWidget {
 }
 
 class _AddMemberFormPageState extends State<AddMemberFormPage> {
-  final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
 
   @override
   void dispose() {
-    _nameController.dispose();
     _phoneController.dispose();
     super.dispose();
   }
@@ -70,8 +70,8 @@ class _AddMemberFormPageState extends State<AddMemberFormPage> {
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: [
-                                Colors.black.withOpacity(0.45),
-                                Colors.black.withOpacity(0.75),
+                                Colors.black.withValues(alpha: 0.45),
+                                const Color.fromRGBO(0, 0, 0, 0.75),
                               ],
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
@@ -106,7 +106,6 @@ class _AddMemberFormPageState extends State<AddMemberFormPage> {
   }
 
   Widget _buildCard(double scale, {required double fixedHeight}) {
-    final textWidth = 266 * scale;
     final buttonWidth = 311 * scale;
     final buttonHeight = 59 * scale;
 
@@ -118,12 +117,14 @@ class _AddMemberFormPageState extends State<AddMemberFormPage> {
           filter: ImageFilter.blur(sigmaX: 12 * scale, sigmaY: 12 * scale),
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.18),
+              color: const Color.fromRGBO(255, 255, 255, 0.18),
               borderRadius: BorderRadius.circular(28 * scale),
-              border: Border.all(color: Colors.white.withOpacity(0.12)),
+              border: Border.all(
+                color: const Color.fromRGBO(255, 255, 255, 0.12),
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.35),
+                  color: const Color.fromRGBO(0, 0, 0, 0.35),
                   offset: Offset(0, 16 * scale),
                   blurRadius: 32 * scale,
                 ),
@@ -149,18 +150,16 @@ class _AddMemberFormPageState extends State<AddMemberFormPage> {
                 ),
                 SizedBox(height: 24 * scale),
                 _LabeledField(
-                  label: 'Name',
-                  controller: _nameController,
-                  hint: 'Ajay Kumar',
-                  scale: scale,
-                ),
-                SizedBox(height: 18 * scale),
-                _LabeledField(
                   label: 'Mobile Number',
                   controller: _phoneController,
-                  hint: '00000 00000',
-                  keyboardType: TextInputType.phone,
+                  hint: 'Enter 10 digit mobile number',
+                  keyboardType: TextInputType.number,
+                  inputFormatters: <TextInputFormatter>[
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(10),
+                  ],
                   scale: scale,
+                  onSearchTap: _onSearchTap,
                 ),
                 const Spacer(),
                 SizedBox(height: 20 * scale),
@@ -168,9 +167,9 @@ class _AddMemberFormPageState extends State<AddMemberFormPage> {
                   width: buttonWidth,
                   height: buttonHeight,
                   child: _GradientButton(
-                    label: 'Continue',
+                    label: 'Search Member',
                     scale: scale,
-                    onTap: _onContinueTap,
+                    onTap: _onSearchTap,
                   ),
                 ),
               ],
@@ -181,23 +180,49 @@ class _AddMemberFormPageState extends State<AddMemberFormPage> {
     );
   }
 
-  void _onContinueTap() {
-    final name = _nameController.text.trim();
+  Future<void> _onSearchTap() async {
     final phone = _phoneController.text.trim();
-    if (name.isEmpty || phone.isEmpty) {
+    if (phone.length != 10) {
       Get.snackbar(
-        'Info',
-        'Please enter both name and phone number',
+        'Invalid mobile number',
+        'Mobile number must be exactly 10 digits',
         snackPosition: SnackPosition.BOTTOM,
       );
       return;
     }
 
     FocusScope.of(context).unfocus();
-    Get.to(
-      () => SelectPlanPage(name: name, phone: phone),
-      transition: Transition.downToUp,
-    );
+
+    final apiServices = ApiServices();
+    final result = await apiServices.searchMemberByPhone(phone: phone);
+
+    // Console the response
+    debugPrint('=== ADD MEMBER SEARCH RESULT ===');
+    debugPrint('Phone: $phone');
+    debugPrint('Raw result: $result');
+    debugPrint('User ID: ${result?['user_id'] ?? 'not found'}');
+    debugPrint('First Name: ${result?['first_name'] ?? 'not found'}');
+    debugPrint('Avatar URL: ${result?['avatar_url'] ?? 'not found'}');
+    debugPrint('================================');
+
+    if (result != null) {
+      final name = result['first_name'] ?? 'Member';
+      final userId = result['user_id']?.toString();
+      if (userId == null || userId.isEmpty) {
+        Get.snackbar(
+          'Member lookup failed',
+          'User ID was missing from the search response',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return;
+      }
+      Get.to(
+        () => SelectPlanPage(name: name, phone: phone, userId: userId),
+        transition: Transition.downToUp,
+      );
+    } else {
+      Get.snackbar('Not found', 'No member found with this number');
+    }
   }
 }
 
@@ -208,13 +233,17 @@ class _LabeledField extends StatelessWidget {
     required this.hint,
     required this.scale,
     this.keyboardType,
+    this.inputFormatters,
+    this.onSearchTap,
   });
 
   final String label;
   final TextEditingController controller;
   final String hint;
   final TextInputType? keyboardType;
+  final List<TextInputFormatter>? inputFormatters;
   final double scale;
+  final VoidCallback? onSearchTap;
 
   @override
   Widget build(BuildContext context) {
@@ -226,35 +255,61 @@ class _LabeledField extends StatelessWidget {
           style: GoogleFonts.montserrat(
             fontSize: 13 * scale,
             fontWeight: FontWeight.w500,
-            color: Colors.white.withOpacity(0.85),
+            color: const Color.fromRGBO(255, 255, 255, 0.85),
           ),
         ),
         SizedBox(height: 6 * scale),
-        TextField(
-          controller: controller,
-          keyboardType: keyboardType,
-          style: GoogleFonts.montserrat(
-            color: Colors.white,
-            fontSize: 16 * scale,
-            fontWeight: FontWeight.w500,
-          ),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: GoogleFonts.montserrat(
-              color: Colors.white70,
-              fontSize: 15 * scale,
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: controller,
+                keyboardType: keyboardType,
+                inputFormatters: inputFormatters,
+                style: GoogleFonts.montserrat(
+                  color: Colors.white,
+                  fontSize: 16 * scale,
+                  fontWeight: FontWeight.w500,
+                ),
+                decoration: InputDecoration(
+                  hintText: hint,
+                  hintStyle: GoogleFonts.montserrat(
+                    color: Colors.white70,
+                    fontSize: 15 * scale,
+                  ),
+                  filled: true,
+                  fillColor: const Color.fromRGBO(0, 0, 0, 0.45),
+                  counterText: '',
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 16 * scale,
+                    vertical: 14 * scale,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(18 * scale),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
             ),
-            filled: true,
-            fillColor: Colors.black.withOpacity(0.45),
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: 16 * scale,
-              vertical: 14 * scale,
+            SizedBox(width: 12 * scale),
+            GestureDetector(
+              onTap: onSearchTap,
+              child: Container(
+                padding: EdgeInsets.all(12 * scale),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF69E322), Color(0xFF0DA339)],
+                  ),
+                  borderRadius: BorderRadius.circular(18 * scale),
+                ),
+                child: Icon(
+                  Icons.search,
+                  color: Colors.white,
+                  size: 20 * scale,
+                ),
+              ),
             ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(18 * scale),
-              borderSide: BorderSide.none,
-            ),
-          ),
+          ],
         ),
       ],
     );
@@ -288,7 +343,7 @@ class _GradientButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(24 * scale),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF0DA339).withOpacity(0.35),
+              color: const Color.fromRGBO(13, 163, 57, 0.35),
               blurRadius: 16 * scale,
               offset: Offset(0, 8 * scale),
             ),

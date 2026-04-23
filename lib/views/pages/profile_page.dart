@@ -93,12 +93,23 @@ class _AvatarCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final firstName = controller.firstNameController.text.trim();
-    final fallbackInitial = firstName.isNotEmpty
-        ? firstName.substring(0, 1).toUpperCase()
-        : 'U';
+    final fallbackInitial =
+        firstName.isNotEmpty ? firstName.substring(0, 1).toUpperCase() : 'U';
 
     Widget avatarChild;
-    if (controller.avatarBytes.value != null) {
+
+    if (controller.isLoading.value && controller.avatarBytes.value == null) {
+      avatarChild = const Center(
+        child: SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: AppColors.brandGreen,
+          ),
+        ),
+      );
+    } else if (controller.avatarBytes.value != null) {
       avatarChild = ClipOval(
         child: Image.memory(
           controller.avatarBytes.value!,
@@ -114,6 +125,23 @@ class _AvatarCard extends StatelessWidget {
           fit: BoxFit.cover,
           width: 92,
           height: 92,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Center(
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.brandGreen,
+                  value: loadingProgress.expectedTotalBytes != null
+                      ? loadingProgress.cumulativeBytesLoaded /
+                          loadingProgress.expectedTotalBytes!
+                      : null,
+                ),
+              ),
+            );
+          },
           errorBuilder: (_, error, stackTrace) =>
               _AvatarFallback(initial: fallbackInitial),
         ),
@@ -241,77 +269,118 @@ class _ProfileFormCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
       decoration: _cardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (controller.profileError.value.isNotEmpty) ...[
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF4A2328),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFF8A303A)),
-              ),
-              child: Text(
-                controller.profileError.value,
-                style: GoogleFonts.inter(
-                  color: const Color(0xFFFFD3D8),
-                  fontSize: 12,
-                ),
+      child: Obx(() {
+        if (controller.isLoading.value) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 32),
+            child: Center(
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: AppColors.brandGreen,
               ),
             ),
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (controller.profileError.value.isNotEmpty) ...[
+              Container(
+                width: double.infinity,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF4A2328),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFF8A303A)),
+                ),
+                child: Text(
+                  controller.profileError.value,
+                  style: GoogleFonts.inter(
+                    color: const Color(0xFFFFD3D8),
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
+            Row(
+              children: [
+                Expanded(
+                  child: _LabeledField(
+                    label: 'First Name',
+                    controller: controller.firstNameController,
+                    hint: 'Rajesh',
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _LabeledField(
+                    label: 'Last Name',
+                    controller: controller.lastNameController,
+                    hint: 'Kumar',
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 10),
+            _LabeledField(
+              label: 'Quote',
+              controller: controller.quoteController,
+              hint: 'Stay consistent and trust the process.',
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(child: _GenderField(controller: controller)),
+                const SizedBox(width: 10),
+                Expanded(child: _DobField(controller: controller)),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: _LabeledField(
+                    label: 'Height',
+                    controller: controller.heightController,
+                    hint: '170',
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _LabeledField(
+                    label: 'Weight',
+                    controller: controller.weightController,
+                    hint: '70',
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            _LabeledField(
+              label: 'Phone',
+              controller: controller.phoneController,
+              hint: '9876543210',
+              keyboardType: TextInputType.phone,
+            ),
+            const SizedBox(height: 10),
+            _LabeledField(
+              label: 'Email',
+              controller: controller.emailController,
+              hint: 'example@mail.com',
+              keyboardType: TextInputType.emailAddress,
+            ),
           ],
-          Row(
-            children: [
-              Expanded(
-                child: _LabeledField(
-                  label: 'First Name',
-                  controller: controller.firstNameController,
-                  hint: 'Rajesh',
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _LabeledField(
-                  label: 'Last Name',
-                  controller: controller.lastNameController,
-                  hint: 'Kumar',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          _LabeledField(
-            label: 'Quote',
-            controller: controller.quoteController,
-            hint: 'Stay consistent and trust the process.',
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(child: _GenderField(controller: controller)),
-              const SizedBox(width: 10),
-              Expanded(child: _DobField(controller: controller)),
-            ],
-          ),
-          const SizedBox(height: 10),
-          _LabeledField(
-            label: 'Phone',
-            controller: controller.phoneController,
-            hint: '9876543210',
-            keyboardType: TextInputType.phone,
-          ),
-          const SizedBox(height: 10),
-          _LabeledField(
-            label: 'Email',
-            controller: controller.emailController,
-            hint: 'example@mail.com',
-            keyboardType: TextInputType.emailAddress,
-          ),
-        ],
-      ),
+        );
+      }),
     );
   }
 }

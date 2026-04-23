@@ -5,12 +5,17 @@ import 'dart:convert';
 import 'package:azanto/Services/plan_service.dart';
 import 'package:azanto/Services/session_service.dart';
 import 'package:azanto/Services/login_services.dart';
+import 'package:azanto/core/theme/app_colors.dart';
+import 'package:azanto/models/plan_model.dart';
+import 'package:azanto/utils/backend_error_widgets.dart';
+import 'package:azanto/views/pages/plan_details_page.dart';
 import 'package:azanto/views/models/plan_option.dart';
 import 'package:azanto/views/widgets/plan_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lottie/lottie.dart';
 
 class PlansPage extends StatefulWidget {
   const PlansPage({super.key});
@@ -32,9 +37,8 @@ class _PlansPageState extends State<PlansPage> {
     final bottomPadding = MediaQuery.viewPaddingOf(context).bottom;
     final widthScale = MediaQuery.sizeOf(context).width / 393.0;
     final heightScale = MediaQuery.sizeOf(context).height / 852.0;
-    final scale = math
-        .min(math.min(widthScale, heightScale), 1.0)
-        .clamp(0.9, 1.0);
+    final scale =
+        math.min(math.min(widthScale, heightScale), 1.0).clamp(0.9, 1.0);
     final double availableWidth =
         MediaQuery.sizeOf(context).width - 32; // 16px padding both sides
     final double cardWidth = math.min(340 * scale, availableWidth).toDouble();
@@ -92,29 +96,31 @@ class _PlansPageState extends State<PlansPage> {
                 child: const CircularProgressIndicator(),
               ),
             )
+          else if (_plans.isEmpty && _loadError != null)
+            _PlansLoadErrorState(error: _loadError!, onRetryTap: _loadPlans)
           else if (_plans.isEmpty)
-            _EmptyState(
-              onCreateTap: _openCreatePlanSheet,
-              error: _loadError,
-            )
+            _EmptyState(onCreateTap: _openCreatePlanSheet)
           else
             Column(
               children: [
                 for (final plan in _plans) ...[
-                  PlanCard(
-                    option: plan,
-                    scale: scale,
-                    showButton: false,
-                    forcedWidth: cardWidth,
-                    forcedHeight: cardHeight,
-                    customContentPadding: EdgeInsets.fromLTRB(
-                      16 * scale,
-                      20 * scale,
-                      16 * scale,
-                      16 * scale,
+                  GestureDetector(
+                    onTap: () => _openPlanDetails(plan),
+                    child: PlanCard(
+                      option: plan,
+                      scale: scale,
+                      showButton: false,
+                      forcedWidth: cardWidth,
+                      forcedHeight: cardHeight,
+                      customContentPadding: EdgeInsets.fromLTRB(
+                        16 * scale,
+                        20 * scale,
+                        16 * scale,
+                        16 * scale,
+                      ),
+                      titleFontSize: 28 * scale,
+                      titleFontWeight: FontWeight.w700,
                     ),
-                    titleFontSize: 28 * scale,
-                    titleFontWeight: FontWeight.w700,
                   ),
                   SizedBox(height: 18.h),
                 ],
@@ -273,26 +279,34 @@ class _PlansPageState extends State<PlansPage> {
                                         return;
                                       }
 
+                                      final gymId = _resolveGymId();
+                                      if (gymId == null || gymId.isEmpty) {
+                                        Get.snackbar('Error', 'No gym id found in token.', snackPosition: SnackPosition.BOTTOM);
+                                        return;
+                                      }
+                                      final branchId = SessionService().branchId ?? gymId;
+
                                       setModalState(() => submitting = true);
                                       setState(() => _creating = true);
                                       try {
-                                        final response = await _planService
-                                            .createPlan(
-                                              name: name,
-                                              description: desc,
-                                              durationDays: duration,
-                                              basePrice: price,
-                                              isActive: isActive,
-                                            );
+                                        final response =
+                                            await _planService.createPlan(
+                                          gymId: gymId,
+                                          branchId: branchId,
+                                          name: name,
+                                          description: desc,
+                                          durationDays: duration,
+                                          basePrice: price,
+                                          isActive: isActive,
+                                        );
 
                                         _addPlanToList(
-                                          id:
-                                              (response['id'] ??
-                                                      response['plan_id'] ??
-                                                      DateTime.now()
-                                                          .millisecondsSinceEpoch
-                                                          .toString())
-                                                  .toString(),
+                                          id: (response['id'] ??
+                                                  response['plan_id'] ??
+                                                  DateTime.now()
+                                                      .millisecondsSinceEpoch
+                                                      .toString())
+                                              .toString(),
                                           name: name,
                                           desc: desc,
                                           duration: duration,
@@ -305,9 +319,15 @@ class _PlansPageState extends State<PlansPage> {
                                           snackPosition: SnackPosition.BOTTOM,
                                           duration: const Duration(seconds: 4),
                                         );
-                                        if (!mounted) return;
+                                        if (!context.mounted) return;
                                         Navigator.of(context).pop();
                                       } on ApiException catch (e) {
+                                        if (await BackendErrorWidgets
+                                            .handleApiException(
+                                          e,
+                                        )) {
+                                          return;
+                                        }
                                         Get.snackbar(
                                           'Create failed',
                                           e.detailMessage,
@@ -332,8 +352,8 @@ class _PlansPageState extends State<PlansPage> {
                                         strokeWidth: 2.4,
                                         valueColor:
                                             AlwaysStoppedAnimation<Color>(
-                                              Colors.black,
-                                            ),
+                                          Colors.black,
+                                        ),
                                       ),
                                     )
                                   : const Text('Save plan'),
@@ -380,6 +400,40 @@ class _PlansPageState extends State<PlansPage> {
     });
   }
 
+  Future<void> _openPlanDetails(PlanOption plan) async {
+    final updatedPlan = await Get.to<Plan>(
+      () => PlanDetailsPage(
+        planId: plan.id,
+        initialTitle: plan.title,
+      ),
+    );
+    
+    // Always fetch updated plans from backend when returning
+    await _loadPlans();
+  }
+
+  void _replacePlanInList(Plan updatedPlan) {
+    final index = _plans.indexWhere((plan) => plan.id == updatedPlan.id);
+    if (index < 0) return;
+
+    final current = _plans[index];
+    setState(() {
+      _plans[index] = PlanOption(
+        id: updatedPlan.id,
+        title: updatedPlan.name,
+        subtitle:
+            '${updatedPlan.durationDays} days • ${updatedPlan.description}',
+        price:
+            'Rs ${updatedPlan.price.toStringAsFixed(updatedPlan.price is int ? 0 : 2)}',
+        titleColor: current.titleColor,
+        borderColor: current.borderColor,
+        buttonGradient: current.buttonGradient,
+        buttonTextColor: current.buttonTextColor,
+        priceColor: current.priceColor,
+      );
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -402,34 +456,28 @@ class _PlansPageState extends State<PlansPage> {
       return;
     }
 
+    final branchId = SessionService().branchId ?? gymId;
+
     try {
-      final plans = await _planService.getAllPlans(gymId: gymId);
+      final plans = await _planService.getAllPlans(gymId: gymId, branchId: branchId);
       _plans.clear();
       for (final plan in plans) {
-        final name = (plan['name'] ?? '').toString();
-        final desc = (plan['description'] ?? '').toString();
-        final duration = plan['duration_days'] is int
-            ? plan['duration_days'] as int
-            : int.tryParse(plan['duration_days']?.toString() ?? '') ?? 0;
-        final price = plan['base_price'] is num
-            ? plan['base_price'] as num
-            : num.tryParse(plan['base_price']?.toString() ?? '') ?? 0;
         _addPlanToList(
-          id:
-              (plan['id'] ??
-                      plan['plan_id'] ??
-                      DateTime.now().millisecondsSinceEpoch.toString())
-                  .toString(),
-          name: name,
-          desc: desc,
-          duration: duration,
-          price: price,
+          id: plan.id,
+          name: plan.name,
+          desc: plan.description,
+          duration: plan.durationDays,
+          price: plan.price,
         );
       }
     } on ApiException catch (e) {
+      final handled = await BackendErrorWidgets.handleApiException(e);
       setState(() {
         _loadError = e.detailMessage;
       });
+      if (handled) {
+        return;
+      }
     } catch (e) {
       setState(() {
         _loadError = e.toString();
@@ -596,13 +644,94 @@ class _PlanField extends StatelessWidget {
 }
 
 class _EmptyState extends StatelessWidget {
-  const _EmptyState({
-    required this.onCreateTap,
-    this.error,
-  });
+  const _EmptyState({required this.onCreateTap});
 
   final VoidCallback onCreateTap;
-  final String? error;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(18.w, 20.h, 18.w, 24.h),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF191C24), Color(0xFF11131A)],
+        ),
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.black.withOpacity(0.24),
+            blurRadius: 18,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          SizedBox(
+            height: 200.h,
+            child: Lottie.asset(
+              'assets/animations/empty.json',
+              repeat: true,
+              fit: BoxFit.contain,
+            ),
+          ),
+          Text(
+            'No plans yet',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(
+              fontSize: 22.sp,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+          ),
+          SizedBox(height: 10.h),
+          Text(
+            'Your fetched plans are empty right now. Create your first membership plan and it will appear here instantly.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(
+              fontSize: 14.sp,
+              color: Colors.white.withOpacity(0.68),
+              height: 1.45,
+            ),
+          ),
+          SizedBox(height: 18.h),
+          SizedBox(
+            width: double.infinity,
+            height: 50.h,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                foregroundColor: AppColors.black,
+                backgroundColor: const Color(0xFF7CE05B),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16.r),
+                ),
+                elevation: 0,
+              ),
+              onPressed: onCreateTap,
+              child: Text(
+                'Create Your First Plan',
+                style: GoogleFonts.poppins(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlansLoadErrorState extends StatelessWidget {
+  const _PlansLoadErrorState({required this.error, required this.onRetryTap});
+
+  final String error;
+  final VoidCallback onRetryTap;
 
   @override
   Widget build(BuildContext context) {
@@ -611,36 +740,37 @@ class _EmptyState extends StatelessWidget {
       padding: EdgeInsets.fromLTRB(18.w, 20.h, 18.w, 20.h),
       decoration: BoxDecoration(
         color: const Color(0xFF1C1E24),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: Colors.white.withOpacity(0.08)),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Icon(
+            Icons.cloud_off_rounded,
+            color: Colors.white.withOpacity(0.82),
+            size: 38.sp,
+          ),
+          SizedBox(height: 12.h),
           Text(
-            'No plans yet',
+            'Unable to load plans',
+            textAlign: TextAlign.center,
             style: GoogleFonts.poppins(
               fontSize: 18.sp,
               fontWeight: FontWeight.w700,
               color: Colors.white,
             ),
           ),
-          SizedBox(height: 6.h),
+          SizedBox(height: 8.h),
           Text(
-            'Create customised plans for your members with dynamic styled cards.',
+            error,
+            textAlign: TextAlign.center,
             style: GoogleFonts.poppins(
-              fontSize: 14.sp,
-              color: Colors.white.withOpacity(0.68),
+              fontSize: 13.sp,
+              color: Colors.white.withOpacity(0.70),
+              height: 1.4,
             ),
           ),
-          if (error != null && error!.isNotEmpty) ...[
-            SizedBox(height: 8.h),
-            Text(
-              error!,
-              style: GoogleFonts.poppins(fontSize: 13.sp, color: Colors.redAccent),
-            ),
-          ],
-          SizedBox(height: 14.h),
+          SizedBox(height: 16.h),
           SizedBox(
             height: 46.h,
             child: OutlinedButton(
@@ -651,8 +781,8 @@ class _EmptyState extends StatelessWidget {
                 ),
                 foregroundColor: Colors.white,
               ),
-              onPressed: onCreateTap,
-              child: const Text('Create your first plan'),
+              onPressed: onRetryTap,
+              child: const Text('Retry'),
             ),
           ),
         ],
@@ -693,7 +823,10 @@ class _CreatePlanButton extends StatelessWidget {
             : Icon(Icons.add, size: 18.sp),
         label: Text(
           isBusy ? 'Creating...' : 'New Plan',
-          style: GoogleFonts.poppins(fontSize: 14.sp, fontWeight: FontWeight.w600),
+          style: GoogleFonts.poppins(
+            fontSize: 14.sp,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );

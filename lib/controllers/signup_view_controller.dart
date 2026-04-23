@@ -1,6 +1,8 @@
 import 'package:azanto/Services/login_services.dart';
 import 'package:azanto/Services/profile_local_prefs_service.dart';
+import 'package:azanto/core/auth/auth_role.dart';
 import 'package:azanto/routes/app_routes.dart';
+import 'package:azanto/utils/backend_error_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
@@ -49,7 +51,7 @@ class SignupViewController extends GetxController {
       Get.snackbar('Name too long', 'Name must be 20 characters or fewer');
       return;
     }
-    final phoneDigits = contact.replaceAll(RegExp(r'\\D'), '');
+    final phoneDigits = contact.replaceAll(RegExp(r'\D'), '');
     if (phoneDigits.length < 10 || phoneDigits.length > 15) {
       Get.snackbar(
         'Invalid phone',
@@ -69,7 +71,9 @@ class SignupViewController extends GetxController {
     isLoading.value = true;
 
     try {
-      final role = _box.read<String>('selected_role') ?? 'member'; // default to member if not set
+      final role =
+          AuthRole.normalize(_box.read<String>('selected_role')) ??
+          AuthRole.member;
       final response = await services.signupUser(
         fullName: name,
         phone: phoneDigits,
@@ -81,6 +85,9 @@ class SignupViewController extends GetxController {
       Get.snackbar('Success', message);
       Get.offAllNamed(AppRoutes.login);
     } on ApiException catch (e) {
+      if (await BackendErrorWidgets.handleApiException(e)) {
+        return;
+      }
       Get.snackbar('Sign up failed', e.detailMessage);
     } catch (e) {
       Get.snackbar('Error', e.toString());

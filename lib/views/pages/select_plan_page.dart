@@ -5,6 +5,8 @@ import 'dart:ui';
 import 'package:azanto/Services/login_services.dart';
 import 'package:azanto/Services/plan_service.dart';
 import 'package:azanto/Services/session_service.dart';
+import 'package:azanto/models/plan_model.dart';
+import 'package:azanto/utils/backend_error_widgets.dart';
 import 'package:azanto/views/pages/cash_entry_page.dart';
 import 'package:azanto/views/models/plan_option.dart';
 import 'package:azanto/views/widgets/corner_back_button.dart';
@@ -14,10 +16,16 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class SelectPlanPage extends StatefulWidget {
-  const SelectPlanPage({super.key, required this.name, required this.phone});
+  const SelectPlanPage({
+    super.key,
+    required this.name,
+    required this.phone,
+    required this.userId,
+  });
 
   final String name;
   final String phone;
+  final String userId;
 
   @override
   State<SelectPlanPage> createState() => _SelectPlanPageState();
@@ -235,8 +243,10 @@ class _SelectPlanPageState extends State<SelectPlanPage> {
       return;
     }
 
+    final branchId = _sessionService.branchId ?? gymId;
+
     try {
-      final fetchedPlans = await _planService.getAllPlans(gymId: gymId);
+      final fetchedPlans = await _planService.getAllPlans(gymId: gymId, branchId: branchId);
       final mappedPlans = fetchedPlans
           .asMap()
           .entries
@@ -258,10 +268,14 @@ class _SelectPlanPageState extends State<SelectPlanPage> {
         }
       });
     } on ApiException catch (e) {
+      final handled = await BackendErrorWidgets.handleApiException(e);
       if (!mounted) return;
       setState(() {
         _loadError = e.detailMessage;
       });
+      if (handled) {
+        return;
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -276,25 +290,20 @@ class _SelectPlanPageState extends State<SelectPlanPage> {
     }
   }
 
-  PlanOption _mapPlan(Map<String, dynamic> plan, int index) {
+  PlanOption _mapPlan(Plan plan, int index) {
     final palette = _palettes[index % _palettes.length];
-    final name = (plan['name'] ?? 'Plan ${index + 1}').toString().trim();
-    final description = (plan['description'] ?? '').toString().trim();
-    final duration = _parseInt(
-      plan['duration_days'] ?? plan['duration'] ?? plan['days'],
-    );
-    final price = _parseNum(
-      plan['base_price'] ?? plan['price'] ?? plan['amount'],
-    );
+    final name = plan.name.trim();
+    final description = plan.description.trim();
+    final duration = plan.durationDays;
+    final price = plan.price;
 
     final subtitleParts = <String>[
-      if (duration != null && duration > 0) '$duration days',
+      if (duration > 0) '$duration days',
       if (description.isNotEmpty) description,
     ];
 
     return PlanOption(
-      id: (plan['id'] ?? plan['plan_id'] ?? plan['_id'] ?? '$name-$index')
-          .toString(),
+      id: plan.id,
       title: name.isEmpty ? 'Plan ${index + 1}' : name,
       subtitle: subtitleParts.isEmpty
           ? 'Custom membership plan'
@@ -306,16 +315,6 @@ class _SelectPlanPageState extends State<SelectPlanPage> {
       buttonTextColor: palette.buttonTextColor,
       priceColor: palette.priceColor,
     );
-  }
-
-  int? _parseInt(dynamic value) {
-    if (value is int) return value;
-    return int.tryParse(value?.toString() ?? '');
-  }
-
-  num? _parseNum(dynamic value) {
-    if (value is num) return value;
-    return num.tryParse(value?.toString() ?? '');
   }
 
   String _formatPrice(num? amount) {
@@ -370,6 +369,16 @@ class _SelectPlanPageState extends State<SelectPlanPage> {
       return;
     }
 
+    final gymId = _resolveGymId();
+    if (gymId == null || gymId.isEmpty) {
+      Get.snackbar(
+        'Gym not found',
+        'Please log in again and retry membership activation',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
     final option = _plans.firstWhere(
       (plan) => plan.id == _selectedPlan,
       orElse: () => _plans.first,
@@ -379,6 +388,8 @@ class _SelectPlanPageState extends State<SelectPlanPage> {
         planOption: option,
         name: widget.name,
         phone: widget.phone,
+        userId: widget.userId,
+        gymId: gymId,
       ),
       transition: Transition.downToUp,
     );

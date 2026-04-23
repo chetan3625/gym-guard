@@ -3,6 +3,9 @@ import 'dart:typed_data';
 import 'package:azanto/Services/login_services.dart';
 import 'package:azanto/Services/profile_local_prefs_service.dart';
 import 'package:azanto/Services/profile_service.dart';
+import 'package:azanto/controllers/home_controller.dart';
+import 'package:azanto/models/profile_model.dart';
+import 'package:azanto/utils/backend_error_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
@@ -11,8 +14,8 @@ class ProfileController extends GetxController {
   ProfileController({
     ProfileService? profileService,
     ProfileLocalPrefsService? profilePrefs,
-  }) : _profileService = profileService ?? Get.find<ProfileService>(),
-       _profilePrefs = profilePrefs ?? Get.find<ProfileLocalPrefsService>();
+  })  : _profileService = profileService ?? Get.find<ProfileService>(),
+        _profilePrefs = profilePrefs ?? Get.find<ProfileLocalPrefsService>();
 
   final ProfileService _profileService;
   final ProfileLocalPrefsService _profilePrefs;
@@ -23,6 +26,8 @@ class ProfileController extends GetxController {
   final quoteController = TextEditingController();
   final genderController = TextEditingController();
   final dobController = TextEditingController();
+  final heightController = TextEditingController();
+  final weightController = TextEditingController();
   final phoneController = TextEditingController();
   final emailController = TextEditingController();
   final RxnString selectedGender = RxnString();
@@ -55,32 +60,14 @@ class ProfileController extends GetxController {
 
     try {
       final profile = await _profileService.getProfile();
-      final data = _normalizeProfileData(profile);
-
-      firstNameController.text = _resolveValue(
-        _stringOf(data['first_name']),
-        cachedSeed.firstName,
-      );
-      lastNameController.text = _resolveValue(
-        _stringOf(data['last_name']),
-        cachedSeed.lastName,
-      );
-      quoteController.text = _stringOf(data['quote']);
-      final normalizedGender = _normalizeGender(_stringOf(data['gender']));
+      _applyProfile(profile, cachedSeed);
+      final normalizedGender = _normalizeGender(profile.gender);
       selectedGender.value = normalizedGender;
       genderController.text = normalizedGender ?? '';
-      dobController.text = _stringOf(data['dob']);
-      phoneController.text = _resolveValue(
-        _stringOf(data['phone']),
-        cachedSeed.phone,
-      );
-      emailController.text = _resolveValue(
-        _stringOf(data['email']),
-        cachedSeed.email,
-      );
 
       await _persistLocalSeed();
     } on ApiException catch (e) {
+      await BackendErrorWidgets.handleApiException(e);
       profileError.value = e.detailMessage;
     } catch (e) {
       profileError.value = e.toString();
@@ -149,6 +136,9 @@ class ProfileController extends GetxController {
       await loadAvatar();
       Get.snackbar('Success', 'Avatar updated');
     } on ApiException catch (e) {
+      if (await BackendErrorWidgets.handleApiException(e)) {
+        return;
+      }
       Get.snackbar('Upload failed', e.detailMessage);
     } catch (e) {
       Get.snackbar('Upload failed', e.toString());
@@ -165,6 +155,8 @@ class ProfileController extends GetxController {
     final quote = quoteController.text.trim();
     final gender = genderController.text.trim();
     final dob = dobController.text.trim();
+    final height = num.tryParse(heightController.text.trim());
+    final weight = num.tryParse(weightController.text.trim());
     final phone = phoneController.text.trim();
     final email = emailController.text.trim();
 
@@ -176,37 +168,52 @@ class ProfileController extends GetxController {
       Get.snackbar('Missing info', 'Phone and email are required');
       return;
     }
+    if (height == null || weight == null) {
+      Get.snackbar('Missing info', 'Height and weight must be valid numbers');
+      return;
+    }
 
     isSaving.value = true;
     try {
-      final message = await _profileService.updateProfile(<String, dynamic>{
+      final updatedProfile =
+          await _profileService.updateProfile(<String, dynamic>{
         'first_name': firstName,
         'last_name': lastName,
         'quote': quote,
         'gender': gender,
         'dob': dob,
+        'height': height,
+        'weight': weight,
         'phone': phone,
         'email': email,
       });
+      _applyProfile(
+        updatedProfile,
+        LocalProfileSeed(
+          firstName: firstName,
+          lastName: lastName,
+          phone: phone,
+          email: email,
+        ),
+      );
       await _persistLocalSeed();
-      Get.snackbar('Success', message);
+      if (Get.isRegistered<HomeController>()) {
+        Get.find<HomeController>().updateDisplayNameFromProfile(
+          firstName: updatedProfile.firstName,
+          lastName: updatedProfile.lastName,
+        );
+      }
+      Get.snackbar('Success', 'Profile updated');
     } on ApiException catch (e) {
+      if (await BackendErrorWidgets.handleApiException(e)) {
+        return;
+      }
       Get.snackbar('Update failed', e.detailMessage);
     } catch (e) {
       Get.snackbar('Update failed', e.toString());
     } finally {
       isSaving.value = false;
     }
-  }
-
-  Map<String, dynamic> _normalizeProfileData(Map<String, dynamic> payload) {
-    if (payload['data'] is Map) {
-      return Map<String, dynamic>.from(payload['data'] as Map);
-    }
-    if (payload['profile'] is Map) {
-      return Map<String, dynamic>.from(payload['profile'] as Map);
-    }
-    return payload;
   }
 
   void _applyLocalSeed(LocalProfileSeed seed) {
@@ -229,6 +236,21 @@ class ProfileController extends GetxController {
     return fallback.trim();
   }
 
+  void _applyProfile(ProfileModel profile, LocalProfileSeed fallback) {
+    firstNameController.text =
+        _resolveValue(profile.firstName, fallback.firstName);
+    lastNameController.text =
+        _resolveValue(profile.lastName, fallback.lastName);
+    quoteController.text = profile.quote;
+    dobController.text = profile.dob;
+    heightController.text =
+        profile.height == 0 ? '' : profile.height.toString();
+    weightController.text =
+        profile.weight == 0 ? '' : profile.weight.toString();
+    phoneController.text = _resolveValue(profile.phone, fallback.phone);
+    emailController.text = _resolveValue(profile.email, fallback.email);
+  }
+
   Future<void> _persistLocalSeed() {
     return _profilePrefs.saveProfileSeed(
       firstName: firstNameController.text,
@@ -237,8 +259,6 @@ class ProfileController extends GetxController {
       email: emailController.text,
     );
   }
-
-  String _stringOf(dynamic value) => value is String ? value : '';
 
   String? _normalizeGender(String raw) {
     final normalized = raw.trim().toLowerCase();
@@ -258,6 +278,8 @@ class ProfileController extends GetxController {
     quoteController.dispose();
     genderController.dispose();
     dobController.dispose();
+    heightController.dispose();
+    weightController.dispose();
     phoneController.dispose();
     emailController.dispose();
     super.onClose();

@@ -4,13 +4,15 @@ import 'package:azanto/Services/login_services.dart';
 import 'package:azanto/Services/session_service.dart';
 import 'package:azanto/Services/token_refresh_service.dart';
 import 'package:azanto/core/config/global_variables.dart';
+import 'package:azanto/models/gym_model.dart';
+import 'package:azanto/utils/api_response_logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class GymService {
   GymService({SessionService? sessionService, http.Client? client})
-    : _sessionService = sessionService ?? SessionService(),
-      _client = client ?? http.Client();
+      : _sessionService = sessionService ?? SessionService(),
+        _client = client ?? http.Client();
 
   final SessionService _sessionService;
   final http.Client _client;
@@ -52,13 +54,14 @@ class GymService {
     }
 
     final decoded = _decodeResponseBody(response.body);
+    ApiResponseLogger.logResponse('Create Gym API', response);
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       if (decoded is Map) {
         final map = decoded is Map<String, dynamic>
             ? decoded
             : Map<String, dynamic>.from(decoded);
-        final gymId = map['id']?.toString();
+        final gymId = (map['gym_id'] ?? map['id'])?.toString();
         if (gymId != null && gymId.isNotEmpty) {
           await _sessionService.setGymId(gymId);
         }
@@ -68,7 +71,7 @@ class GymService {
     }
 
     // Log raw error for debugging.
-    print(
+    debugPrint(
       'Create gym failed (${response.statusCode}): '
       '${response.body.isNotEmpty ? response.body : 'no body'}',
     );
@@ -114,6 +117,7 @@ class GymService {
     }
 
     final decoded = _decodeResponseBody(response.body);
+    ApiResponseLogger.logResponse('Get Gym API', response);
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       // Backend may return a single map or a list of maps.
@@ -132,7 +136,7 @@ class GymService {
       }
 
       if (map != null) {
-        final gymId = map['id']?.toString();
+        final gymId = (map['gym_id'] ?? map['id'])?.toString();
         if (gymId != null && gymId.isNotEmpty) {
           await _sessionService.setGymId(gymId);
         }
@@ -145,7 +149,7 @@ class GymService {
     }
 
     // Log raw error for debugging.
-    print(
+    debugPrint(
       'Get gym failed (${response.statusCode}): '
       '${response.body.isNotEmpty ? response.body : 'no body'}',
     );
@@ -165,6 +169,86 @@ class GymService {
             ? response.body.trim()
             : 'Unable to fetch gym',
       ),
+      statusCode: response.statusCode,
+      detail: _extractDetail(decoded),
+    );
+  }
+
+  Future<GymModel> getGymDetails() async {
+    final gym = await getGymForOwner();
+    if (gym == null) {
+      throw ApiException('No gym details found for this owner.');
+    }
+    return GymModel.fromJson(gym);
+  }
+
+  Future<GymModel> updateGymDetails({
+    required String id,
+    required String name,
+    required String email,
+    required String? description,
+    required bool isActive,
+  }) async {
+    final token = _sessionService.normalizedToken;
+    if (token == null || token.isEmpty) {
+      throw ApiException('Session expired. Please login again.');
+    }
+
+    http.Response response = await _patchUpdateGym(
+      token: token,
+      id: id,
+      name: name,
+      email: email,
+      description: description,
+      isActive: isActive,
+    );
+
+    if (_isAuthError(response.statusCode)) {
+      final refreshed = await TokenRefreshService(
+        sessionService: _sessionService,
+      ).refreshToken();
+      final newToken = _sessionService.normalizedToken;
+      if (refreshed && newToken != null && newToken.isNotEmpty) {
+        response = await _patchUpdateGym(
+          token: newToken,
+          id: id,
+          name: name,
+          email: email,
+          description: description,
+          isActive: isActive,
+        );
+      }
+    }
+
+    final decoded = _decodeResponseBody(response.body);
+    ApiResponseLogger.logResponse('Update Gym API', response);
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      if (decoded is Map<String, dynamic>) {
+        return GymModel.fromJson(<String, dynamic>{
+          ...decoded,
+          'id': id,
+          'is_active': isActive,
+        });
+      }
+      if (decoded is Map) {
+        return GymModel.fromJson(<String, dynamic>{
+          ...Map<String, dynamic>.from(decoded),
+          'id': id,
+          'is_active': isActive,
+        });
+      }
+      return GymModel(
+        id: id,
+        name: name,
+        email: email,
+        description: description,
+        isActive: isActive,
+      );
+    }
+
+    throw ApiException(
+      _extractMessage(decoded, fallback: 'Unable to update gym details'),
       statusCode: response.statusCode,
       detail: _extractDetail(decoded),
     );
@@ -237,6 +321,30 @@ class GymService {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
       },
+    );
+  }
+
+  Future<http.Response> _patchUpdateGym({
+    required String token,
+    required String id,
+    required String name,
+    required String email,
+    required String? description,
+    required bool isActive,
+  }) {
+    return _client.patch(
+      Uri.parse('${GymApiEndpoints.updateGym}/$id'),
+      headers: <String, String>{
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode(<String, dynamic>{
+        'id': id,
+        'name': name,
+        'email': email,
+        'description': description,
+        'is_active': isActive,
+      }),
     );
   }
 

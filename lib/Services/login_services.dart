@@ -1,6 +1,10 @@
 import 'dart:convert';
 
+import 'package:azanto/Services/session_service.dart';
 import 'package:azanto/core/config/global_variables.dart';
+import 'package:azanto/utils/api_response_logger.dart';
+import 'package:flutter/foundation.dart';
+import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 
 class ApiServices {
@@ -9,15 +13,17 @@ class ApiServices {
   Future<Map<String, dynamic>> loginUser({
     required String phoneno,
     required String password,
+    required String role,
   }) async {
     try {
       final response = await http.post(
         Uri.parse(AuthApiEndpoints.login),
         headers: const {"Content-Type": "application/x-www-form-urlencoded"},
-        body: {"username": phoneno, "password": password},
+        body: {"username": phoneno, "password": password, "role": role},
       );
 
       final body = response.body;
+      ApiResponseLogger.logResponse('Login API', response);
       final decoded = body.isNotEmpty ? jsonDecode(body) : {};
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -27,7 +33,7 @@ class ApiServices {
       final message = _extractMessage(decoded, fallback: 'Unable to login');
       final detail = _extractDetail(decoded);
       // Log server-provided error details for debugging.
-      print(
+      debugPrint(
         "Login failed (${response.statusCode}): ${response.body.isNotEmpty ? response.body : message}",
       );
       throw ApiException(
@@ -38,7 +44,7 @@ class ApiServices {
     } catch (e) {
       if (e is ApiException) rethrow;
       // Log unexpected errors to console for investigation.
-      print("Login unexpected error: $e");
+      debugPrint("Login unexpected error: $e");
       throw ApiException('Something went wrong, please try again.');
     }
   }
@@ -62,6 +68,7 @@ class ApiServices {
       );
 
       final body = response.body;
+      ApiResponseLogger.logResponse('Signup API', response);
       final decoded = body.isNotEmpty ? jsonDecode(body) : {};
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -72,7 +79,7 @@ class ApiServices {
           ? 'Server error, please try again later'
           : _extractMessage(decoded, fallback: 'Unable to sign up');
       final detail = _extractDetail(decoded);
-      print(
+      debugPrint(
         "Signup failed (${response.statusCode}): ${response.body.isNotEmpty ? response.body : message}",
       );
       throw ApiException(
@@ -82,7 +89,7 @@ class ApiServices {
       );
     } catch (e) {
       if (e is ApiException) rethrow;
-      print("Signup unexpected error: $e");
+      debugPrint("Signup unexpected error: $e");
       throw ApiException('Something went wrong, please try again.');
     }
   }
@@ -96,6 +103,7 @@ class ApiServices {
       );
 
       final body = response.body;
+      ApiResponseLogger.logResponse('Request OTP API', response);
       final decoded = body.isNotEmpty ? jsonDecode(body) : {};
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -106,7 +114,7 @@ class ApiServices {
           ? 'Server error, please try again later'
           : _extractMessage(decoded, fallback: 'Unable to send code');
       final detail = _extractDetail(decoded);
-      print(
+      debugPrint(
         "Request OTP failed (${response.statusCode}): ${response.body.isNotEmpty ? response.body : message}",
       );
       throw ApiException(
@@ -116,7 +124,7 @@ class ApiServices {
       );
     } catch (e) {
       if (e is ApiException) rethrow;
-      print("Request OTP unexpected error: $e");
+      debugPrint("Request OTP unexpected error: $e");
       throw ApiException('Something went wrong, please try again.');
     }
   }
@@ -133,6 +141,7 @@ class ApiServices {
       );
 
       final body = response.body;
+      ApiResponseLogger.logResponse('Verify OTP API', response);
       final decoded = body.isNotEmpty ? jsonDecode(body) : {};
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -143,7 +152,7 @@ class ApiServices {
           ? 'Server error, please try again later'
           : _extractMessage(decoded, fallback: 'Unable to verify code');
       final detail = _extractDetail(decoded);
-      print(
+      debugPrint(
         "Verify OTP failed (${response.statusCode}): ${response.body.isNotEmpty ? response.body : message}",
       );
       throw ApiException(
@@ -153,7 +162,7 @@ class ApiServices {
       );
     } catch (e) {
       if (e is ApiException) rethrow;
-      print("Verify OTP unexpected error: $e");
+      debugPrint("Verify OTP unexpected error: $e");
       throw ApiException('Something went wrong, please try again.');
     }
   }
@@ -173,6 +182,7 @@ class ApiServices {
       );
 
       final body = response.body;
+      ApiResponseLogger.logResponse('Reset Password API', response);
       final decoded = body.isNotEmpty ? jsonDecode(body) : {};
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -183,7 +193,7 @@ class ApiServices {
           ? 'Server error, please try again later'
           : _extractMessage(decoded, fallback: 'Unable to reset password');
       final detail = _extractDetail(decoded);
-      print(
+      debugPrint(
         "Reset password failed (${response.statusCode}): ${response.body.isNotEmpty ? response.body : message}",
       );
       throw ApiException(
@@ -193,7 +203,7 @@ class ApiServices {
       );
     } catch (e) {
       if (e is ApiException) rethrow;
-      print("Reset password unexpected error: $e");
+      debugPrint("Reset password unexpected error: $e");
       throw ApiException('Something went wrong, please try again.');
     }
   }
@@ -209,6 +219,29 @@ class ApiServices {
       );
 
       final body = response.body;
+      ApiResponseLogger.logResponse('Refresh Token API', response);
+
+      // Handle 401 specifically - token is invalid/expired
+      if (response.statusCode == 401) {
+        debugPrint(
+          '[AUTH][refresh] 401 Unauthorized - refresh token is invalid or expired',
+        );
+        // Return a special response to indicate 401
+        return {
+          '_error': 'unauthorized',
+          '_status_code': 401,
+          '_detail': body.isNotEmpty
+              ? body
+              : 'Invalid or expired refresh token',
+        };
+      }
+
+      // Handle other error status codes
+      if (response.statusCode >= 400) {
+        debugPrint("Token refresh failed (${response.statusCode}): $body");
+        return null;
+      }
+
       final decoded = body.isNotEmpty ? jsonDecode(body) : {};
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -218,10 +251,9 @@ class ApiServices {
         return null;
       }
 
-      print("Token refresh failed (${response.statusCode}): $body");
       return null;
     } catch (e) {
-      print("Token refresh error: $e");
+      debugPrint("Token refresh error: $e");
       return null;
     }
   }
@@ -241,6 +273,87 @@ class ApiServices {
       return payload['detail'][0]['msg'] as String;
     }
     return fallback;
+  }
+
+  Future<Map<String, dynamic>?> searchMemberByPhone({
+    required String phone,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse('${MembershipApiEndpoints.searchMemberWithPhone}$phone'),
+        headers: const {"Content-Type": "application/json"},
+      );
+
+      final body = response.body;
+      ApiResponseLogger.logResponse('Search Member API', response);
+      final decoded = body.isNotEmpty ? jsonDecode(body) : {};
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return decoded is Map<String, dynamic> ? decoded : null;
+      }
+
+      return null; // Return null if user is not found
+    } catch (e) {
+      debugPrint("Search Member error: $e");
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>> purchaseMembership({
+    required String gymId,
+    required String planId,
+    required String userId,
+    required num amount,
+    required String paymentMode,
+  }) async {
+    try {
+      final SessionService sessionService = Get.isRegistered<SessionService>()
+          ? Get.find<SessionService>()
+          : SessionService();
+      final token = sessionService.normalizedToken;
+      if (token == null) {
+        throw ApiException('No auth token. Please login again.');
+      }
+
+      final response = await http.post(
+        Uri.parse(MembershipApiEndpoints.membershipPurchase),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'gym_id': gymId,
+          'plan_id': planId,
+          'user_id': userId,
+          'amount': amount,
+          'payment_mode': paymentMode,
+        }),
+      );
+
+      final body = response.body;
+      ApiResponseLogger.logResponse('Membership Purchase API', response);
+      final decoded = body.isNotEmpty ? jsonDecode(body) : {};
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return decoded is Map<String, dynamic>
+            ? decoded
+            : {'message': 'Success'};
+      }
+
+      final message = _extractMessage(
+        decoded,
+        fallback: 'Unable to activate membership',
+      );
+      throw ApiException(
+        message,
+        statusCode: response.statusCode,
+        detail: decoded,
+      );
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      debugPrint("Membership purchase error: $e");
+      throw ApiException('Something went wrong, please try again.');
+    }
   }
 
   dynamic _extractDetail(dynamic payload) {

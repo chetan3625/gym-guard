@@ -1,5 +1,6 @@
 import 'package:azanto/Services/login_services.dart';
 import 'package:azanto/routes/app_routes.dart';
+import 'package:azanto/utils/backend_error_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -27,11 +28,11 @@ class VerifyOtpController extends GetxController {
 
   Future<void> onVerifyTap() async {
     final code = digitControllers.map((c) => c.text.trim()).join();
-    if (code.isEmpty || code.length < 4 || code.length > 8) {
-      Get.snackbar('Invalid code', 'Enter the code (4-8 characters)');
+    if (code.isEmpty || code.length < 4) {
+      Get.snackbar('Invalid code', 'Enter the complete 4-digit code');
       return;
     }
-    final normalizedPhone = phone.replaceAll(RegExp(r'\\D'), '');
+    final normalizedPhone = phone.replaceAll(RegExp(r'\D'), '');
     if (normalizedPhone.isEmpty) {
       Get.snackbar('Missing phone', 'Phone number not found. Please retry.');
       return;
@@ -59,6 +60,9 @@ class VerifyOtpController extends GetxController {
         arguments: {'reset_token': resetToken},
       );
     } on ApiException catch (e) {
+      if (await BackendErrorWidgets.handleApiException(e)) {
+        return;
+      }
       Get.snackbar('Failed', e.detailMessage);
     } catch (e) {
       Get.snackbar('Error', e.toString());
@@ -68,7 +72,7 @@ class VerifyOtpController extends GetxController {
   }
 
   void onDigitChanged(int index, String value) {
-    final cleaned = value.replaceAll(RegExp(r'\\D'), '');
+    final cleaned = value.replaceAll(RegExp(r'\D'), '');
 
     // Handle paste or rapid typing of multiple digits.
     if (cleaned.length > 1) {

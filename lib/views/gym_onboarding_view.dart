@@ -4,8 +4,10 @@ import 'package:azanto/Services/branch_service.dart';
 import 'package:azanto/Services/gym_service.dart';
 import 'package:azanto/Services/login_services.dart';
 import 'package:azanto/Services/session_service.dart';
+import 'package:azanto/Services/token_refresh_manager.dart';
 import 'package:azanto/core/theme/app_colors.dart';
 import 'package:azanto/routes/app_routes.dart';
+import 'package:azanto/utils/backend_error_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -146,6 +148,11 @@ class _GymOnboardingScreenState extends State<GymOnboardingScreen> {
       );
 
       final branchDisplayName = branchResult['name']?.toString() ?? branchName;
+      final branchId = (branchResult['branch_id'] ?? branchResult['id'])?.toString();
+      
+      if (branchId != null && branchId.isNotEmpty) {
+        await _session.setBranchId(branchId);
+      }
 
       await _session.setGymPromptDismissed(true);
       Get.snackbar(
@@ -155,6 +162,9 @@ class _GymOnboardingScreenState extends State<GymOnboardingScreen> {
       );
       Get.offAllNamed(AppRoutes.home);
     } on ApiException catch (e) {
+      if (await BackendErrorWidgets.handleApiException(e)) {
+        return;
+      }
       Get.snackbar('Could not save', e.detailMessage);
     } catch (e) {
       Get.snackbar('Could not save', e.toString());
@@ -162,7 +172,6 @@ class _GymOnboardingScreenState extends State<GymOnboardingScreen> {
       if (mounted) setState(() => _submitting = false);
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -205,7 +214,11 @@ class _GymOnboardingScreenState extends State<GymOnboardingScreen> {
                       TextButton(
                         onPressed: _submitting
                             ? null
-                            : () => Get.offAllNamed(AppRoutes.roleSelection),
+                            : () async {
+                                await TokenRefreshManager.clearState();
+                                await _session.clearSession();
+                                Get.offAllNamed(AppRoutes.roleSelection);
+                              },
                         child: Text(
                           'Log out',
                           style: GoogleFonts.inter(color: Colors.white70),
@@ -234,9 +247,9 @@ class _GymOnboardingScreenState extends State<GymOnboardingScreen> {
                         filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
                         child: Container(
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.03),
+                            color: const Color.fromRGBO(255, 255, 255, 0.03),
                             border: Border.all(
-                              color: Colors.white.withOpacity(0.06),
+                              color: const Color.fromRGBO(255, 255, 255, 0.06),
                             ),
                             borderRadius: BorderRadius.circular(20),
                           ),
@@ -285,7 +298,12 @@ class _GymOnboardingScreenState extends State<GymOnboardingScreen> {
                           child: OutlinedButton(
                             style: OutlinedButton.styleFrom(
                               side: BorderSide(
-                                color: Colors.white.withOpacity(0.18),
+                                color: const Color.fromRGBO(
+                                  255,
+                                  255,
+                                  255,
+                                  0.18,
+                                ),
                               ),
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 14),
@@ -317,9 +335,7 @@ class _GymOnboardingScreenState extends State<GymOnboardingScreen> {
                                     color: Colors.black,
                                   ),
                                 )
-                              : Text(_step == 0
-                                  ? 'Continue'
-                                  : 'Finish setup'),
+                              : Text(_step == 0 ? 'Continue' : 'Finish setup'),
                         ),
                       ),
                     ],
@@ -378,7 +394,9 @@ class _GymDetailsStep extends StatelessWidget {
             decoration: BoxDecoration(
               color: const Color(0xFF1B1D24),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.white.withOpacity(0.08)),
+              border: Border.all(
+                color: const Color.fromRGBO(255, 255, 255, 0.08),
+              ),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -405,7 +423,7 @@ class _GymDetailsStep extends StatelessWidget {
                 ),
                 Switch(
                   value: isActive,
-                  activeColor: Colors.white,
+                  activeThumbColor: Colors.white,
                   activeTrackColor: AppColors.brandGreen,
                   onChanged: onToggleActive,
                 ),
@@ -463,7 +481,9 @@ class _BranchDetailsStep extends StatelessWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFF1B1D24),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.white.withOpacity(0.08)),
+                border: Border.all(
+                  color: const Color.fromRGBO(255, 255, 255, 0.08),
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -488,9 +508,7 @@ class _BranchDetailsStep extends StatelessWidget {
                   if (gymEmail.trim().isNotEmpty)
                     Text(
                       gymEmail,
-                      style: GoogleFonts.inter(
-                        color: Colors.white70,
-                      ),
+                      style: GoogleFonts.inter(color: Colors.white70),
                     ),
                 ],
               ),
@@ -594,7 +612,7 @@ class _Field extends StatelessWidget {
           label,
           style: GoogleFonts.poppins(
             fontSize: 14,
-            color: Colors.white.withOpacity(0.85),
+            color: const Color.fromRGBO(255, 255, 255, 0.85),
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -606,7 +624,9 @@ class _Field extends StatelessWidget {
           style: GoogleFonts.inter(color: Colors.white),
           decoration: InputDecoration(
             hintText: hintText,
-            hintStyle: GoogleFonts.inter(color: Colors.white.withOpacity(0.45)),
+            hintStyle: GoogleFonts.inter(
+              color: const Color.fromRGBO(255, 255, 255, 0.45),
+            ),
             filled: true,
             fillColor: const Color(0xFF1B1D24),
             contentPadding: const EdgeInsets.symmetric(
@@ -615,7 +635,9 @@ class _Field extends StatelessWidget {
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+              borderSide: BorderSide(
+                color: const Color.fromRGBO(255, 255, 255, 0.08),
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -653,7 +675,7 @@ class _TimeTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: const Color(0xFF1B1D24),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withOpacity(0.08)),
+          border: Border.all(color: const Color.fromRGBO(255, 255, 255, 0.08)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -704,7 +726,7 @@ class _StepDots extends StatelessWidget {
           decoration: BoxDecoration(
             color: index == active
                 ? AppColors.brandGreen
-                : Colors.white.withOpacity(0.24),
+                : const Color.fromRGBO(255, 255, 255, 0.24),
             borderRadius: BorderRadius.circular(20),
           ),
         ),
@@ -718,9 +740,9 @@ class _GlowPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 80);
-    paint.color = AppColors.brandGreen.withOpacity(0.25);
+    paint.color = const Color.fromRGBO(99, 215, 0, 0.25);
     canvas.drawCircle(Offset(size.width * 0.2, size.height * 0.25), 140, paint);
-    paint.color = const Color(0xFF5B5FFF).withOpacity(0.18);
+    paint.color = const Color.fromRGBO(91, 95, 255, 0.18);
     canvas.drawCircle(Offset(size.width * 0.85, size.height * 0.4), 180, paint);
   }
 

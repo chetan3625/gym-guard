@@ -3,8 +3,11 @@ import 'dart:convert';
 import 'package:azanto/Services/session_service.dart';
 import 'package:azanto/Services/gym_service.dart';
 import 'package:azanto/Services/token_refresh_manager.dart';
+import 'package:azanto/core/auth/auth_role.dart';
 import 'package:azanto/controllers/profile_controller.dart';
+import 'package:azanto/models/gym_model.dart';
 import 'package:azanto/routes/app_routes.dart';
+import 'package:azanto/views/pages/gym_details_page.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
@@ -23,6 +26,10 @@ class HomeController extends GetxController {
   late final GymService _gymService = GymService(sessionService: session);
 
   bool get isOwner {
+    final sessionRole = session.authenticatedRole;
+    if (sessionRole != null) {
+      return sessionRole == AuthRole.owner;
+    }
     final rawRole = _rawRoleFromClaims(tokenPayload) ?? roleTitle.value;
     final normalized = rawRole.toLowerCase();
     return normalized.contains('owner');
@@ -48,6 +55,19 @@ class HomeController extends GetxController {
     }
   }
 
+  void updateDisplayNameFromProfile({
+    required String firstName,
+    required String lastName,
+  }) {
+    final fullName = [firstName.trim(), lastName.trim()]
+        .where((value) => value.isNotEmpty)
+        .join(' ')
+        .trim();
+    if (fullName.isNotEmpty) {
+      displayName.value = fullName;
+    }
+  }
+
   void closeProfile() {
     isProfileOpen.value = false;
   }
@@ -70,7 +90,7 @@ class HomeController extends GetxController {
   }
 
   Future<void> onLogout() async {
-    await TokenRefreshManager.cancelTokenRefresh();
+    await TokenRefreshManager.clearState();
     await session.clearSession();
     Get.offAllNamed(AppRoutes.roleSelection);
   }
@@ -91,15 +111,40 @@ class HomeController extends GetxController {
   Future<void> markGymCreated({
     required String gymId,
     required String gymName,
+    String? email,
     String? description,
   }) async {
     await session.setGymId(gymId);
     showAddGymCard.value = false;
     showGymPrompt.value = false;
     gymSummary.value = GymSummaryData(
+      gymId: gymId,
       gymName: gymName,
+      email: email,
       description: description,
     );
+  }
+
+  Future<void> openGymDetails() async {
+    final summary = gymSummary.value;
+    final gymId = summary?.gymId ?? session.gymId;
+    if (gymId == null || gymId.trim().isEmpty) return;
+
+    final updatedGym = await Get.to<GymModel>(
+      () => GymDetailsPage(
+        gymId: gymId,
+        initialTitle: summary?.gymName,
+      ),
+    );
+
+    if (updatedGym != null) {
+      gymSummary.value = GymSummaryData(
+        gymId: updatedGym.id,
+        gymName: updatedGym.name,
+        email: updatedGym.email,
+        description: updatedGym.description,
+      );
+    }
   }
 
   void _evaluateGymState() {
@@ -121,10 +166,14 @@ class HomeController extends GetxController {
     try {
       final gym = await _gymService.getGymForOwner();
       if (gym != null) {
+        final gymId = (gym['gym_id'] ?? gym['id'] ?? '').toString().trim();
         final name = (gym['name'] ?? '').toString().trim();
+        final email = (gym['email'] ?? '').toString().trim();
         final desc = gym['description']?.toString().trim();
         gymSummary.value = GymSummaryData(
+          gymId: gymId,
           gymName: name.isNotEmpty ? name : 'Your gym',
+          email: email.isNotEmpty ? email : null,
           description: (desc != null && desc.isNotEmpty) ? desc : null,
         );
         return;
@@ -133,15 +182,14 @@ class HomeController extends GetxController {
       // Ignore API errors; fall back to token claims below.
     }
 
-    final resolvedGymName =
-        _extractGymName(tokenPayload) ??
+    final resolvedGymName = _extractGymName(tokenPayload) ??
         (session.gymId?.isNotEmpty ?? false
             ? 'Gym ${session.gymId}'
             : 'Your gym');
-    final resolvedDescription =
-        tokenPayload['gym_description'] as String? ??
+    final resolvedDescription = tokenPayload['gym_description'] as String? ??
         tokenPayload['gymDescription'] as String?;
     gymSummary.value = GymSummaryData(
+      gymId: session.gymId,
       gymName: resolvedGymName,
       description: resolvedDescription?.trim().isEmpty ?? true
           ? null
@@ -182,6 +230,10 @@ class HomeController extends GetxController {
     }
     tokenPayloadError.value = '';
     debugPrint('Home token payload: $claims');
+  }
+
+  void onAddMemberTapped() {
+    Get.toNamed(AppRoutes.searchMember);
   }
 
   String _extractDisplayName(Map<String, dynamic> claims) {
@@ -356,10 +408,14 @@ class HomeController extends GetxController {
 
 class GymSummaryData {
   const GymSummaryData({
+    this.gymId,
     required this.gymName,
+    this.email,
     this.description,
   });
 
+  final String? gymId;
   final String gymName;
+  final String? email;
   final String? description;
 }
