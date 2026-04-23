@@ -62,6 +62,7 @@ class MemberProfileApiEndpoints {
       '${GlobalVariables.memberProfileBaseUrl}/update-profile';
   static const String uploadAvatar =
       '${GlobalVariables.memberProfileBaseUrl}/upload-avatar';
+      
   static const String getAvatar =
       '${GlobalVariables.memberProfileBaseUrl}/getavatar';
 }
