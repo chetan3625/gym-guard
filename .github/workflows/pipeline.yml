@@ -33,7 +33,7 @@ jobs:
         with:
           appId: ${{ secrets.FIREBASE_APP_ID }}
           serviceCredentialsFileContent: ${{ secrets.FIREBASE_CREDENTIALS }}
-          #groups: testers
+          groups: azanto-developer
           file: build/app/outputs/flutter-apk/app-release.apk
 
 
