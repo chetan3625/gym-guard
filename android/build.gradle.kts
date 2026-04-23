@@ -3,6 +3,9 @@ allprojects {
         google()
         mavenCentral()
     }
+    dependencies {
+        classpath("com.google.gms:google-services:4.4.1")
+    }
 }
 
 val newBuildDir: Directory =
@@ -21,11 +24,4 @@ subprojects {
 
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
-}
-
-plugins {
-  id("com.android.application")
-
-  // Add the Google services Gradle plugin
-  id("com.google.gms.google-services")
 }
