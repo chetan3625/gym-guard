@@ -4,6 +4,7 @@ import 'package:azanto/Services/login_services.dart';
 import 'package:azanto/Services/session_service.dart';
 import 'package:azanto/Services/token_refresh_service.dart';
 import 'package:azanto/core/config/global_variables.dart';
+import 'package:azanto/models/gym_branch_model.dart';
 import 'package:azanto/utils/api_response_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -15,6 +16,95 @@ class BranchService {
 
   final SessionService _sessionService;
   final http.Client _client;
+
+  Future<List<GymBranchModel>> getAllBranches({
+    required String gymId,
+  }) async {
+    final token = _sessionService.normalizedToken;
+    if (token == null || token.isEmpty) {
+      throw ApiException('Session expired. Please login again.');
+    }
+
+    http.Response response = await _getAllBranches(
+      token: token,
+      gymId: gymId,
+    );
+
+    if (_isAuthError(response.statusCode)) {
+      final refreshed = await TokenRefreshService(
+        sessionService: _sessionService,
+      ).refreshToken();
+      final newToken = _sessionService.normalizedToken;
+      if (refreshed && newToken != null && newToken.isNotEmpty) {
+        response = await _getAllBranches(
+          token: newToken,
+          gymId: gymId,
+        );
+      }
+    }
+
+    final decoded = _decodeResponseBody(response.body);
+    ApiResponseLogger.logResponse('Get Branches API', response);
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final items = _extractBranchItems(decoded);
+      return items
+          .map((item) => GymBranchModel.fromJson(item))
+          .toList(growable: false);
+    }
+
+    throw ApiException(
+      _extractMessage(decoded, fallback: 'Unable to fetch branches'),
+      statusCode: response.statusCode,
+      detail: _extractDetail(decoded),
+    );
+  }
+
+  Future<GymBranchModel> getBranchDetails({
+    required String branchId,
+  }) async {
+    final token = _sessionService.normalizedToken;
+    if (token == null || token.isEmpty) {
+      throw ApiException('Session expired. Please login again.');
+    }
+
+    http.Response response = await _getBranchDetails(
+      token: token,
+      branchId: branchId,
+    );
+
+    if (_isAuthError(response.statusCode)) {
+      final refreshed = await TokenRefreshService(
+        sessionService: _sessionService,
+      ).refreshToken();
+      final newToken = _sessionService.normalizedToken;
+      if (refreshed && newToken != null && newToken.isNotEmpty) {
+        response = await _getBranchDetails(
+          token: newToken,
+          branchId: branchId,
+        );
+      }
+    }
+
+    final decoded = _decodeResponseBody(response.body);
+    ApiResponseLogger.logResponse('Get Branch Details API', response);
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      if (decoded is Map<String, dynamic>) {
+        return GymBranchModel.fromJson(decoded);
+      }
+      if (decoded is Map) {
+        return GymBranchModel.fromJson(Map<String, dynamic>.from(decoded));
+      }
+      throw ApiException('Branch details not found.');
+    }
+
+    throw ApiException(
+      _extractMessage(decoded, fallback: 'Unable to fetch branch details'),
+      statusCode: response.statusCode,
+      detail: _extractDetail(decoded),
+    );
+  }
 
   Future<Map<String, dynamic>> createBranch({
     required String gymId,
@@ -136,6 +226,60 @@ class BranchService {
         'created_at': DateTime.now().toUtc().toIso8601String(),
       }),
     );
+  }
+
+  Future<http.Response> _getAllBranches({
+    required String token,
+    required String gymId,
+  }) {
+    return _client.get(
+      Uri.parse('${GymApiEndpoints.getAllBranches}/$gymId'),
+      headers: <String, String>{
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+  }
+
+  Future<http.Response> _getBranchDetails({
+    required String token,
+    required String branchId,
+  }) {
+    return _client.get(
+      Uri.parse('${GymApiEndpoints.getBranchDetails}/$branchId'),
+      headers: <String, String>{
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+  }
+
+  List<Map<String, dynamic>> _extractBranchItems(dynamic payload) {
+    if (payload is List) {
+      return payload
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .toList(growable: false);
+    }
+
+    if (payload is Map) {
+      final candidates = <dynamic>[
+        payload['data'],
+        payload['branches'],
+        payload['items'],
+        payload['results'],
+      ];
+      for (final candidate in candidates) {
+        if (candidate is List) {
+          return candidate
+              .whereType<Map>()
+              .map((item) => Map<String, dynamic>.from(item))
+              .toList(growable: false);
+        }
+      }
+    }
+
+    return const <Map<String, dynamic>>[];
   }
 
   dynamic _decodeResponseBody(String body) {

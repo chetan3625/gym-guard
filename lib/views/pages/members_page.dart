@@ -38,18 +38,30 @@ class _MembersPageState extends State<MembersPage> {
     FocusScope.of(context).unfocus();
     setState(() => _isSearching = true);
 
-    final result = await _apiServices.searchMemberByPhone(phone: phone);
+    try {
+      final result = await _apiServices.searchMemberByPhone(phone: phone);
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    setState(() => _isSearching = false);
+      setState(() => _isSearching = false);
 
-    // For clean UI, show result in snackbar instead of card
-    if (result != null) {
-      final memberName = _findString(result, const ['name', 'full_name', 'fullName']);
-      _showMessage(memberName != null ? 'Found: $memberName' : 'Member found');
-    } else {
-      _showMessage('No member found for $phone');
+      if (result != null) {
+        final memberName = _findString(
+          result,
+          const ['first_name', 'name', 'full_name', 'fullName'],
+        );
+        _showMessage(memberName != null ? 'Found: $memberName' : 'Member found');
+      } else {
+        _showMessage('No member found for $phone');
+      }
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _isSearching = false);
+      _showMessage(e.detailMessage);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSearching = false);
+      _showMessage('Unable to search member right now.');
     }
   }
 
@@ -70,8 +82,6 @@ class _MembersPageState extends State<MembersPage> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomPadding = MediaQuery.viewPaddingOf(context).bottom;
-
     return SingleChildScrollView(
       padding: EdgeInsets.zero,
       child: MaxWidthContainer(

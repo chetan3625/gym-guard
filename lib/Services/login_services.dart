@@ -279,9 +279,20 @@ class ApiServices {
     required String phone,
   }) async {
     try {
+      final SessionService sessionService = Get.isRegistered<SessionService>()
+          ? Get.find<SessionService>()
+          : SessionService();
+      final token = sessionService.normalizedToken;
+      if (token == null || token.isEmpty) {
+        throw ApiException('Session expired. Please login again.');
+      }
+
       final response = await http.get(
         Uri.parse('${MembershipApiEndpoints.searchMemberWithPhone}$phone'),
-        headers: const {"Content-Type": "application/json"},
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
       );
 
       final body = response.body;
@@ -289,14 +300,38 @@ class ApiServices {
       final decoded = body.isNotEmpty ? jsonDecode(body) : {};
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        return decoded is Map<String, dynamic> ? decoded : null;
+        if (decoded is Map<String, dynamic>) {
+          return _extractMemberPayload(decoded);
+        }
+        if (decoded is Map) {
+          return _extractMemberPayload(Map<String, dynamic>.from(decoded));
+        }
+        return null;
       }
 
-      return null; // Return null if user is not found
+      if (response.statusCode == 404) {
+        return null;
+      }
+
+      throw ApiException(
+        _extractMessage(decoded, fallback: 'Unable to search member'),
+        statusCode: response.statusCode,
+        detail: _extractDetail(decoded),
+      );
     } catch (e) {
+      if (e is ApiException) rethrow;
       debugPrint("Search Member error: $e");
-      return null;
+      return null; // Return null if user is not found
     }
+  }
+
+  Map<String, dynamic>? _extractMemberPayload(Map<String, dynamic> source) {
+    for (final key in const <String>['data', 'member', 'user', 'result']) {
+      final value = source[key];
+      if (value is Map<String, dynamic>) return value;
+      if (value is Map) return Map<String, dynamic>.from(value);
+    }
+    return source;
   }
 
   Future<Map<String, dynamic>> purchaseMembership({

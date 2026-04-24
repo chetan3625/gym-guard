@@ -3,6 +3,7 @@ import 'package:azanto/Services/login_services.dart';
 import 'package:azanto/core/theme/app_colors.dart';
 import 'package:azanto/models/gym_model.dart';
 import 'package:azanto/utils/backend_error_widgets.dart';
+import 'package:azanto/views/pages/gym_branches_page.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -142,6 +143,18 @@ class _GymDetailsPageState extends State<GymDetailsPage> {
     }
   }
 
+  Future<void> _openBranchesPage() async {
+    final gym = _gym;
+    if (gym == null) return;
+
+    await Get.to<void>(
+      () => GymBranchesPage(
+        gymId: gym.id,
+        gymName: gym.name,
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -165,9 +178,7 @@ class _GymDetailsPageState extends State<GymDetailsPage> {
               const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
         ),
         title: Text(
-          widget.initialTitle?.trim().isNotEmpty == true
-              ? widget.initialTitle!
-              : 'Gym Details',
+          'Gym Details',
           style: GoogleFonts.poppins(
             color: Colors.white,
             fontWeight: FontWeight.w700,
@@ -237,6 +248,36 @@ class _GymDetailsPageState extends State<GymDetailsPage> {
                                 ),
                                 const SizedBox(height: 12),
                                 _GymInfoRow(label: 'Gym ID', value: gym.id),
+                                const SizedBox(height: 18),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: OutlinedButton.icon(
+                                    onPressed: _openBranchesPage,
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: Colors.white,
+                                      side: BorderSide(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.14,
+                                        ),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 14,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                    ),
+                                    icon: const Icon(Icons.storefront_rounded),
+                                    label: Text(
+                                      'View Branches',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
                                 const SizedBox(height: 14),
                                 SizedBox(
                                   width: double.infinity,

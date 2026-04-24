@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:azanto/Services/login_services.dart';
+import 'package:azanto/Services/member_service.dart';
 import 'package:azanto/views/pages/select_plan_page.dart';
 import 'package:azanto/views/widgets/corner_back_button.dart';
 import 'package:flutter/material.dart';
@@ -20,6 +21,16 @@ class AddMemberFormPage extends StatefulWidget {
 
 class _AddMemberFormPageState extends State<AddMemberFormPage> {
   final _phoneController = TextEditingController();
+  late final MemberService _memberService;
+  bool _isSearching = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _memberService = Get.isRegistered<MemberService>()
+        ? Get.find<MemberService>()
+        : MemberService();
+  }
 
   @override
   void dispose() {
@@ -167,9 +178,9 @@ class _AddMemberFormPageState extends State<AddMemberFormPage> {
                   width: buttonWidth,
                   height: buttonHeight,
                   child: _GradientButton(
-                    label: 'Search Member',
+                    label: _isSearching ? 'Searching...' : 'Search Member',
                     scale: scale,
-                    onTap: _onSearchTap,
+                    onTap: _isSearching ? null : _onSearchTap,
                   ),
                 ),
               ],
@@ -192,37 +203,82 @@ class _AddMemberFormPageState extends State<AddMemberFormPage> {
     }
 
     FocusScope.of(context).unfocus();
+    setState(() => _isSearching = true);
 
-    final apiServices = ApiServices();
-    final result = await apiServices.searchMemberByPhone(phone: phone);
+    try {
+      final result = await _memberService.searchMemberByPhone(phone);
 
-    // Console the response
-    debugPrint('=== ADD MEMBER SEARCH RESULT ===');
-    debugPrint('Phone: $phone');
-    debugPrint('Raw result: $result');
-    debugPrint('User ID: ${result?['user_id'] ?? 'not found'}');
-    debugPrint('First Name: ${result?['first_name'] ?? 'not found'}');
-    debugPrint('Avatar URL: ${result?['avatar_url'] ?? 'not found'}');
-    debugPrint('================================');
+      debugPrint('=== ADD MEMBER SEARCH RESULT ===');
+      debugPrint('Phone: $phone');
+      debugPrint('Raw result: $result');
+      debugPrint('User ID: ${result?['user_id'] ?? result?['id'] ?? 'not found'}');
+      debugPrint('First Name: ${result?['first_name'] ?? result?['name'] ?? 'not found'}');
+      debugPrint('Avatar URL: ${result?['avatar_url'] ?? 'not found'}');
+      debugPrint('================================');
 
-    if (result != null) {
-      final name = result['first_name'] ?? 'Member';
-      final userId = result['user_id']?.toString();
-      if (userId == null || userId.isEmpty) {
-        Get.snackbar(
-          'Member lookup failed',
-          'User ID was missing from the search response',
-          snackPosition: SnackPosition.BOTTOM,
+      if (!mounted) return;
+
+      if (result != null) {
+        final name = _resolveMemberName(result);
+        final userId = _resolveUserId(result);
+        if (userId == null || userId.isEmpty) {
+          Get.snackbar(
+            'Member lookup failed',
+            'User ID was missing from the search response',
+            snackPosition: SnackPosition.BOTTOM,
+          );
+          return;
+        }
+        Get.to(
+          () => SelectPlanPage(name: name, phone: phone, userId: userId),
+          transition: Transition.downToUp,
         );
-        return;
+      } else {
+        Get.snackbar('Not found', 'No member found with this number');
       }
-      Get.to(
-        () => SelectPlanPage(name: name, phone: phone, userId: userId),
-        transition: Transition.downToUp,
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      Get.snackbar(
+        'Member search failed',
+        e.detailMessage,
+        snackPosition: SnackPosition.BOTTOM,
       );
-    } else {
-      Get.snackbar('Not found', 'No member found with this number');
+    } finally {
+      if (mounted) {
+        setState(() => _isSearching = false);
+      }
     }
+  }
+
+  String _resolveMemberName(Map<String, dynamic> result) {
+    final candidates = <dynamic>[
+      result['first_name'],
+      result['name'],
+      result['full_name'],
+      result['fullName'],
+      result['phone'],
+    ];
+
+    for (final candidate in candidates) {
+      final text = candidate?.toString().trim() ?? '';
+      if (text.isNotEmpty) return text;
+    }
+    return 'Member';
+  }
+
+  String? _resolveUserId(Map<String, dynamic> result) {
+    final candidates = <dynamic>[
+      result['user_id'],
+      result['id'],
+      result['_id'],
+      result['member_id'],
+    ];
+
+    for (final candidate in candidates) {
+      final text = candidate?.toString().trim() ?? '';
+      if (text.isNotEmpty) return text;
+    }
+    return null;
   }
 }
 
@@ -324,7 +380,7 @@ class _GradientButton extends StatelessWidget {
   });
 
   final String label;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final double scale;
 
   @override

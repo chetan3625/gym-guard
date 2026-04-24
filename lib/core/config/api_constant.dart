@@ -40,13 +40,17 @@ class PlanApiEndpoints {
 class GymApiEndpoints {
   const GymApiEndpoints._();
 
-  /// Creates a new gym 
+  /// Creates a new gym
   static const String createGym =
       '${GlobalVariables.gymBaseUrl}/gym/onboardNewGym';
   static const String addBranch =
       '${GlobalVariables.gymBaseUrl}/gym/branch/addbranch';
+  static const String getAllBranches =
+      '${GlobalVariables.gymBaseUrl}/gym/get-all-branches';
+  static const String getBranchDetails =
+      '${GlobalVariables.gymBaseUrl}/gym/branch/getbranchdetails';
 
-  /// Returns the gyms owned 
+  /// Returns the gyms owned
   static const String getGym =
       '${GlobalVariables.gymBaseUrl}/gym/getGym';
   static const String updateGym =

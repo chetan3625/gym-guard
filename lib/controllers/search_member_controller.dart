@@ -2,7 +2,6 @@
 import 'package:azanto/Services/member_service.dart';
 import 'package:azanto/routes/app_routes.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 class SearchMemberController extends GetxController {

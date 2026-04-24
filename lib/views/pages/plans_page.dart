@@ -83,6 +83,7 @@ class _PlansPageState extends State<PlansPage> {
                     child: _CreatePlanButton(
                       onTap: _openCreatePlanSheet,
                       isBusy: _creating,
+                      label: 'Add Plan',
                     ),
                   ),
                 ),
@@ -792,10 +793,15 @@ class _PlansLoadErrorState extends StatelessWidget {
 }
 
 class _CreatePlanButton extends StatelessWidget {
-  const _CreatePlanButton({required this.onTap, required this.isBusy});
+  const _CreatePlanButton({
+    required this.onTap,
+    required this.isBusy,
+    required this.label,
+  });
 
   final VoidCallback onTap;
   final bool isBusy;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
@@ -822,7 +828,7 @@ class _CreatePlanButton extends StatelessWidget {
               )
             : Icon(Icons.add, size: 18.sp),
         label: Text(
-          isBusy ? 'Creating...' : 'New Plan',
+          isBusy ? 'Creating...' : label,
           style: GoogleFonts.poppins(
             fontSize: 14.sp,
             fontWeight: FontWeight.w600,
