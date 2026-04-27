@@ -1,6 +1,7 @@
 import 'package:azanto/Services/login_services.dart';
 import 'package:azanto/core/responsive/responsive.dart';
 import 'package:azanto/core/theme/app_colors.dart';
+import 'package:azanto/utils/member_search_mapper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -20,6 +21,8 @@ class _MembersPageState extends State<MembersPage> {
   final ApiServices _apiServices = ApiServices();
 
   bool _isSearching = false;
+  Map<String, dynamic>? _searchedMember;
+  bool _hasSearched = false;
 
   @override
   void dispose() {
@@ -36,14 +39,20 @@ class _MembersPageState extends State<MembersPage> {
     }
 
     FocusScope.of(context).unfocus();
-    setState(() => _isSearching = true);
+    setState(() {
+      _isSearching = true;
+      _hasSearched = true;
+    });
 
     try {
       final result = await _apiServices.searchMemberByPhone(phone: phone);
 
       if (!mounted) return;
 
-      setState(() => _isSearching = false);
+      setState(() {
+        _isSearching = false;
+        _searchedMember = result;
+      });
 
       if (result != null) {
         final memberName = _findString(
@@ -56,11 +65,17 @@ class _MembersPageState extends State<MembersPage> {
       }
     } on ApiException catch (e) {
       if (!mounted) return;
-      setState(() => _isSearching = false);
+      setState(() {
+        _isSearching = false;
+        _searchedMember = null;
+      });
       _showMessage(e.detailMessage);
     } catch (e) {
       if (!mounted) return;
-      setState(() => _isSearching = false);
+      setState(() {
+        _isSearching = false;
+        _searchedMember = null;
+      });
       _showMessage('Unable to search member right now.');
     }
   }
@@ -116,9 +131,125 @@ class _MembersPageState extends State<MembersPage> {
                 Expanded(flex: 3, child: _CompactAddButton(onTap: widget.onAddMemberTap)),
               ],
             ),
+            SizedBox(height: 14.h),
+            _MemberSearchResultCard(
+              member: _searchedMember,
+              hasSearched: _hasSearched,
+              isSearching: _isSearching,
+            ),
             SizedBox(height: 50.h),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _MemberSearchResultCard extends StatelessWidget {
+  const _MemberSearchResultCard({
+    required this.member,
+    required this.hasSearched,
+    required this.isSearching,
+  });
+
+  final Map<String, dynamic>? member;
+  final bool hasSearched;
+  final bool isSearching;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!hasSearched) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: const Color(0xFF202229),
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: const Color(0xFF33363E)),
+      ),
+      child: isSearching
+          ? Padding(
+              padding: EdgeInsets.symmetric(vertical: 22.h),
+              child: const Center(
+                child: CircularProgressIndicator(color: AppColors.brandGreen),
+              ),
+            )
+          : member == null
+              ? Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 16.w,
+                    vertical: 18.h,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.person_search_outlined,
+                        color: Colors.white54,
+                        size: 22.sp,
+                      ),
+                      SizedBox(width: 10.w),
+                      Expanded(
+                        child: Text(
+                          'No member found',
+                          style: GoogleFonts.inter(
+                            color: Colors.white70,
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : ListTile(
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 14.w,
+                    vertical: 6.h,
+                  ),
+                  leading: _MemberAvatar(avatarUrl: member!['avatar_url']?.toString()),
+                  title: Text(
+                    MemberSearchMapper.resolveMemberName(member!),
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  trailing: Icon(
+                    Icons.chevron_right_rounded,
+                    color: Colors.white54,
+                    size: 22.sp,
+                  ),
+                ),
+    );
+  }
+}
+
+class _MemberAvatar extends StatelessWidget {
+  const _MemberAvatar({required this.avatarUrl});
+
+  final String? avatarUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final normalized = avatarUrl?.trim() ?? '';
+    if (normalized.isNotEmpty) {
+      return CircleAvatar(
+        radius: 22.r,
+        backgroundColor: Colors.white.withValues(alpha: 0.08),
+        backgroundImage: NetworkImage(normalized),
+      );
+    }
+
+    return CircleAvatar(
+      radius: 22.r,
+      backgroundColor: Colors.white.withValues(alpha: 0.08),
+      child: Icon(
+        Icons.person_outline_rounded,
+        color: Colors.white70,
+        size: 20.sp,
       ),
     );
   }

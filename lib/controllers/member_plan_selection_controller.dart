@@ -4,6 +4,7 @@ import 'package:azanto/Services/plan_service.dart';
 import 'package:azanto/Services/session_service.dart';
 import 'package:azanto/models/plan_model.dart';
 import 'package:azanto/routes/app_routes.dart';
+import 'package:azanto/utils/member_search_mapper.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -94,13 +95,11 @@ class MemberPlanSelectionController extends GetxController {
   }
 
   String _getMemberName() {
-    return searchedUser['first_name']?.toString() ??
-           searchedUser['name']?.toString() ??
-           'Member';
+    return MemberSearchMapper.resolveMemberName(searchedUser);
   }
 
   String? _getUserId() {
-    return searchedUser['user_id']?.toString();
+    return MemberSearchMapper.resolveUserId(searchedUser);
   }
 
   void _processSubscription(Plan plan, String paymentMode) async {

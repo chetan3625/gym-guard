@@ -53,8 +53,12 @@ class GymApiEndpoints {
   /// Returns the gyms owned
   static const String getGym =
       '${GlobalVariables.gymBaseUrl}/gym/getGym';
+  static const String getLogo =
+      '${GlobalVariables.gymBaseUrl}/gym/get-logo';
   static const String updateGym =
       '${GlobalVariables.gymBaseUrl}/gym/updateGymDetails';
+  static const String uploadLogo =
+      '${GlobalVariables.gymBaseUrl}/gym/upload-logo';
 }
 
 class MemberProfileApiEndpoints {
@@ -76,8 +80,8 @@ class MembershipApiEndpoints {
   const MembershipApiEndpoints._();
 
   static const String searchMember =
-      '${GlobalVariables.apiBaseUrl}/profile/member/search-member/by_phone';
+      'https://devapi.azanto.in/profile/api/v1/member/search-member/{by_phone}';
   static String get searchMemberWithPhone => '$searchMember?phone=';
   static const String membershipPurchase =
-      '${GlobalVariables.apiBaseUrl}/profile/membership/membership-purchase';
+      '${GlobalVariables.apiBaseUrl}/profile/${GlobalVariables.apiVersion}/membership/membership-purchase';
 }

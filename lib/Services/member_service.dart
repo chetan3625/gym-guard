@@ -5,6 +5,7 @@ import 'package:azanto/Services/session_service.dart';
 import 'package:azanto/Services/token_refresh_service.dart';
 import 'package:azanto/core/config/api_constant.dart';
 import 'package:azanto/utils/api_response_logger.dart';
+import 'package:azanto/utils/member_search_mapper.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
@@ -45,7 +46,7 @@ class MemberService {
     ApiResponseLogger.logResponse('Search Member API', response);
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      return _extractMemberPayload(decoded);
+      return MemberSearchMapper.extractMemberPayload(decoded);
     }
 
     if (response.statusCode == 404) {
@@ -142,28 +143,6 @@ class MemberService {
     } catch (_) {
       return body;
     }
-  }
-
-  Map<String, dynamic>? _extractMemberPayload(dynamic decoded) {
-    if (decoded is Map<String, dynamic>) {
-      final nested = _extractNestedMemberMap(decoded);
-      return nested ?? decoded;
-    }
-    if (decoded is Map) {
-      final mapped = Map<String, dynamic>.from(decoded);
-      final nested = _extractNestedMemberMap(mapped);
-      return nested ?? mapped;
-    }
-    return null;
-  }
-
-  Map<String, dynamic>? _extractNestedMemberMap(Map<String, dynamic> source) {
-    for (final key in const <String>['data', 'member', 'user', 'result']) {
-      final value = source[key];
-      if (value is Map<String, dynamic>) return value;
-      if (value is Map) return Map<String, dynamic>.from(value);
-    }
-    return null;
   }
 
   String _extractMessage(dynamic payload, {required String fallback}) {

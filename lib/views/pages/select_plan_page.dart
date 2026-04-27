@@ -196,33 +196,37 @@ class _SelectPlanPageState extends State<SelectPlanPage> {
       );
     }
 
-    return Column(
-      children: [
-        for (final option in _plans) ...[
-          PlanCard(
-            option: option,
-            scale: scale,
-            forcedWidth: 315 * scale,
-            forcedHeight: 210 * scale,
-            customContentPadding: EdgeInsets.fromLTRB(
-              16 * scale,
-              22 * scale,
-              16 * scale,
-              18 * scale,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cardWidth = constraints.maxWidth;
+        return Column(
+          children: [
+            for (final option in _plans) ...[
+              PlanCard(
+                option: option,
+                scale: scale,
+                forcedWidth: cardWidth,
+                customContentPadding: EdgeInsets.fromLTRB(
+                  16 * scale,
+                  22 * scale,
+                  16 * scale,
+                  18 * scale,
+                ),
+                titleFontSize: 28,
+                titleFontWeight: FontWeight.w600,
+                isSelected: option.id == _selectedPlan,
+                onButtonTap: () => setState(() => _selectedPlan = option.id),
+              ),
+              SizedBox(height: 24 * scale),
+            ],
+            SizedBox(
+              width: double.infinity,
+              child: _ProceedButton(scale: scale, onTap: _onProceedTap),
             ),
-            titleFontSize: 31 * scale,
-            titleFontWeight: FontWeight.w600,
-            isSelected: option.id == _selectedPlan,
-            onButtonTap: () => setState(() => _selectedPlan = option.id),
-          ),
-          SizedBox(height: 30 * scale),
-        ],
-        SizedBox(
-          width: 311 * scale,
-          child: _ProceedButton(scale: scale, onTap: _onProceedTap),
-        ),
-        SizedBox(height: 24 * scale),
-      ],
+            SizedBox(height: 24 * scale),
+          ],
+        );
+      },
     );
   }
 

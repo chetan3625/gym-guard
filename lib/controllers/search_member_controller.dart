@@ -1,6 +1,7 @@
 
 import 'package:azanto/Services/member_service.dart';
-import 'package:azanto/routes/app_routes.dart';
+import 'package:azanto/utils/member_search_mapper.dart';
+import 'package:azanto/views/pages/select_plan_page.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -30,7 +31,18 @@ class SearchMemberController extends GetxController {
       final phone = phoneController.text.replaceAll(RegExp(r'\D'), '');
       final user = await _memberService.searchMemberByPhone(phone);
       if (user != null) {
-        Get.toNamed(AppRoutes.memberPlanSelection, arguments: user);
+        final userId = MemberSearchMapper.resolveUserId(user);
+        if (userId == null || userId.isEmpty) {
+          Get.snackbar('Error', 'Member ID not found in search response');
+          return;
+        }
+        Get.to(
+          () => SelectPlanPage(
+            name: MemberSearchMapper.resolveMemberName(user),
+            phone: MemberSearchMapper.resolvePhone(user) ?? phone,
+            userId: userId,
+          ),
+        );
       } else {
         Get.snackbar('Error', 'Member not found');
       }

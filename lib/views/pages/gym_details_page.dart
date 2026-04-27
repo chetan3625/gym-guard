@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:azanto/Services/gym_service.dart';
+import 'package:azanto/core/config/global_variables.dart';
 import 'package:azanto/Services/login_services.dart';
 import 'package:azanto/core/theme/app_colors.dart';
 import 'package:azanto/models/gym_model.dart';
@@ -7,6 +10,7 @@ import 'package:azanto/views/pages/gym_branches_page.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 
 class GymDetailsPage extends StatefulWidget {
   const GymDetailsPage({
@@ -24,6 +28,7 @@ class GymDetailsPage extends StatefulWidget {
 
 class _GymDetailsPageState extends State<GymDetailsPage> {
   final GymService _gymService = GymService();
+  final ImagePicker _imagePicker = ImagePicker();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
@@ -31,8 +36,10 @@ class _GymDetailsPageState extends State<GymDetailsPage> {
   GymModel? _gym;
   bool _loading = true;
   bool _saving = false;
+  bool _uploadingLogo = false;
   bool _isActive = true;
   String? _error;
+  String? _selectedLogoPath;
 
   @override
   void initState() {
@@ -48,10 +55,16 @@ class _GymDetailsPageState extends State<GymDetailsPage> {
 
     try {
       final gym = await _gymService.getGymDetails();
+      String? logoUrl;
+      try {
+        logoUrl = await _gymService.getGymLogo(gymId: widget.gymId);
+      } catch (_) {
+        logoUrl = gym.logoUrl;
+      }
       if (!mounted) return;
       setState(() {
-        _gym = gym;
-        _syncControllers(gym);
+        _gym = gym.copyWith(logoUrl: logoUrl ?? gym.logoUrl);
+        _syncControllers(_gym!);
       });
     } on ApiException catch (e) {
       await BackendErrorWidgets.handleApiException(e);
@@ -107,9 +120,18 @@ class _GymDetailsPageState extends State<GymDetailsPage> {
         isActive: _isActive,
       );
       if (!mounted) return null;
+      GymModel resolvedGym = updatedGym;
+      if (_selectedLogoPath != null && _selectedLogoPath!.trim().isNotEmpty) {
+        final logoUrl = await _gymService.uploadGymLogo(
+          gymId: widget.gymId,
+          filePath: _selectedLogoPath!,
+        );
+        resolvedGym = updatedGym.copyWith(logoUrl: logoUrl);
+      }
       setState(() {
-        _gym = updatedGym;
-        _syncControllers(updatedGym);
+        _gym = resolvedGym;
+        _syncControllers(resolvedGym);
+        _selectedLogoPath = null;
       });
       Get.snackbar(
         'Gym updated',
@@ -138,6 +160,40 @@ class _GymDetailsPageState extends State<GymDetailsPage> {
       if (mounted) {
         setState(() {
           _saving = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _pickLogo() async {
+    if (_uploadingLogo || _saving) return;
+
+    setState(() {
+      _uploadingLogo = true;
+    });
+
+    try {
+      final pickedFile = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1400,
+        maxHeight: 1400,
+        imageQuality: 88,
+      );
+      if (!mounted || pickedFile == null) return;
+      setState(() {
+        _selectedLogoPath = pickedFile.path;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      Get.snackbar(
+        'Logo selection failed',
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _uploadingLogo = false;
         });
       }
     }
@@ -199,7 +255,12 @@ class _GymDetailsPageState extends State<GymDetailsPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _GymSummaryCard(gym: gym),
+                          _GymSummaryCard(
+                            gym: gym,
+                            selectedLogoPath: _selectedLogoPath,
+                            isUploadingLogo: _uploadingLogo,
+                            onUploadTap: _pickLogo,
+                          ),
                           const SizedBox(height: 16),
                           _GymSection(
                             title: 'Update Gym Details',
@@ -333,9 +394,17 @@ class _GymDetailsPageState extends State<GymDetailsPage> {
 }
 
 class _GymSummaryCard extends StatelessWidget {
-  const _GymSummaryCard({required this.gym});
+  const _GymSummaryCard({
+    required this.gym,
+    required this.selectedLogoPath,
+    required this.isUploadingLogo,
+    required this.onUploadTap,
+  });
 
   final GymModel gym;
+  final String? selectedLogoPath;
+  final bool isUploadingLogo;
+  final VoidCallback onUploadTap;
 
   @override
   Widget build(BuildContext context) {
@@ -354,41 +423,64 @@ class _GymSummaryCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: gym.isActive
-                  ? AppColors.brandGreen.withValues(alpha: 0.16)
-                  : Colors.orangeAccent.withValues(alpha: 0.18),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Text(
-              gym.isActive ? 'GYM ACTIVE' : 'GYM INACTIVE',
-              style: GoogleFonts.poppins(
-                color:
-                    gym.isActive ? AppColors.brandGreen : Colors.orangeAccent,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _GymLogoAvatar(
+                selectedLogoPath: selectedLogoPath,
+                logoUrl: gym.logoUrl,
+                isUploading: isUploadingLogo,
+                onTap: onUploadTap,
               ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            gym.name.isEmpty ? 'Your Gym' : gym.name,
-            style: GoogleFonts.poppins(
-              color: Colors.white,
-              fontSize: 28,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            gym.email,
-            style: GoogleFonts.poppins(
-              color: Colors.white70,
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
-            ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: gym.isActive
+                            ? AppColors.brandGreen.withValues(alpha: 0.16)
+                            : Colors.orangeAccent.withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        gym.isActive ? 'GYM ACTIVE' : 'GYM INACTIVE',
+                        style: GoogleFonts.poppins(
+                          color: gym.isActive
+                              ? AppColors.brandGreen
+                              : Colors.orangeAccent,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      gym.name.isEmpty ? 'Your Gym' : gym.name,
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      gym.email,
+                      style: GoogleFonts.poppins(
+                        color: Colors.white70,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
           if (gym.description?.isNotEmpty ?? false) ...[
             const SizedBox(height: 8),
@@ -402,6 +494,154 @@ class _GymSummaryCard extends StatelessWidget {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _GymLogoAvatar extends StatelessWidget {
+  const _GymLogoAvatar({
+    required this.selectedLogoPath,
+    required this.logoUrl,
+    required this.isUploading,
+    required this.onTap,
+  });
+
+  final String? selectedLogoPath;
+  final String? logoUrl;
+  final bool isUploading;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(22),
+            onTap: isUploading ? null : onTap,
+            child: Container(
+              width: 82,
+              height: 82,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: _GymLogoImage(
+                selectedLogoPath: selectedLogoPath,
+                logoUrl: logoUrl,
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          right: -4,
+          bottom: -4,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: isUploading ? null : onTap,
+              customBorder: const CircleBorder(),
+              child: Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: AppColors.brandGreen,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: const Color(0xFF101216),
+                    width: 2,
+                  ),
+                ),
+                child: Center(
+                  child: isUploading
+                      ? const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.black,
+                            ),
+                          ),
+                        )
+                      : const Icon(
+                          Icons.add_rounded,
+                          color: Colors.black,
+                          size: 18,
+                        ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _GymLogoImage extends StatelessWidget {
+  const _GymLogoImage({
+    required this.selectedLogoPath,
+    required this.logoUrl,
+  });
+
+  final String? selectedLogoPath;
+  final String? logoUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    if (selectedLogoPath != null && selectedLogoPath!.trim().isNotEmpty) {
+      return Image.file(
+        File(selectedLogoPath!),
+        fit: BoxFit.cover,
+      );
+    }
+
+    final normalized = logoUrl?.trim() ?? '';
+    if (normalized.isNotEmpty) {
+      final resolved = normalized.startsWith('http://') ||
+              normalized.startsWith('https://')
+          ? normalized
+          : '${GlobalVariables.apiHost}$normalized';
+      return Image.network(
+        resolved,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => const _GymLogoPlaceholder(),
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return const Center(
+            child: SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: AppColors.brandGreen,
+              ),
+            ),
+          );
+        },
+      );
+    }
+
+    return const _GymLogoPlaceholder();
+  }
+}
+
+class _GymLogoPlaceholder extends StatelessWidget {
+  const _GymLogoPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Icon(
+        Icons.image_outlined,
+        color: Colors.white54,
+        size: 32,
       ),
     );
   }

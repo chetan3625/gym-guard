@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:azanto/Services/session_service.dart';
 import 'package:azanto/core/config/global_variables.dart';
 import 'package:azanto/utils/api_response_logger.dart';
+import 'package:azanto/utils/member_search_mapper.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
@@ -300,13 +301,7 @@ class ApiServices {
       final decoded = body.isNotEmpty ? jsonDecode(body) : {};
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        if (decoded is Map<String, dynamic>) {
-          return _extractMemberPayload(decoded);
-        }
-        if (decoded is Map) {
-          return _extractMemberPayload(Map<String, dynamic>.from(decoded));
-        }
-        return null;
+        return MemberSearchMapper.extractMemberPayload(decoded);
       }
 
       if (response.statusCode == 404) {
@@ -323,15 +318,6 @@ class ApiServices {
       debugPrint("Search Member error: $e");
       return null; // Return null if user is not found
     }
-  }
-
-  Map<String, dynamic>? _extractMemberPayload(Map<String, dynamic> source) {
-    for (final key in const <String>['data', 'member', 'user', 'result']) {
-      final value = source[key];
-      if (value is Map<String, dynamic>) return value;
-      if (value is Map) return Map<String, dynamic>.from(value);
-    }
-    return source;
   }
 
   Future<Map<String, dynamic>> purchaseMembership({

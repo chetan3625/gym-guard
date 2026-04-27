@@ -131,6 +131,8 @@ class _DashboardTab extends StatelessWidget {
                     memberName: memberName,
                     onTap: onOpenProfile,
                   ),
+                  const SizedBox(height: 16),
+                  const _BiDirectionalSlider(),
                   const SizedBox(height: 14),
                   const Row(
                     children: [
@@ -653,4 +655,192 @@ BoxDecoration _cardDecoration({bool highlight = false}) {
       ),
     ],
   );
+}
+
+class _BiDirectionalSlider extends StatefulWidget {
+  const _BiDirectionalSlider();
+
+  @override
+  State<_BiDirectionalSlider> createState() => _BiDirectionalSliderState();
+}
+
+class _BiDirectionalSliderState extends State<_BiDirectionalSlider> {
+  double _dragPosition = 0.0;
+  bool _isDragging = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final sliderWidth = constraints.maxWidth;
+        const thumbWidth = 64.0;
+        final maxDrag = (sliderWidth - thumbWidth) / 2 - 4; // 4 for padding
+
+        // Determine colors based on drag position
+        Color trackColor = const Color(0xFF1C1C1C);
+        Color activeColor = Colors.white;
+        
+        if (_dragPosition > 0) {
+          activeColor = Color.lerp(Colors.white, AppColors.brandGreen, _dragPosition / maxDrag) ?? AppColors.brandGreen;
+        } else if (_dragPosition < 0) {
+          activeColor = Color.lerp(Colors.white, const Color(0xFFFF4D4D), -_dragPosition / maxDrag) ?? const Color(0xFFFF4D4D);
+        }
+
+        return Container(
+          height: 64,
+          width: sliderWidth,
+          decoration: BoxDecoration(
+            color: trackColor,
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(
+              color: activeColor.withValues(alpha: 0.3),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: activeColor.withValues(alpha: 0.1),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Check-Out Text (Left)
+              Positioned(
+                left: 24,
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 150),
+                  opacity: _dragPosition > 20 ? 0.0 : 1.0,
+                  child: Row(
+                    children: [
+                      Icon(Icons.keyboard_double_arrow_left_rounded, 
+                           color: const Color(0xFFFF4D4D).withValues(alpha: 0.8), size: 20),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Check-Out',
+                        style: GoogleFonts.poppins(
+                          color: const Color(0xFFFF4D4D).withValues(alpha: 0.9),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              
+              // Check-In Text (Right)
+              Positioned(
+                right: 24,
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 150),
+                  opacity: _dragPosition < -20 ? 0.0 : 1.0,
+                  child: Row(
+                    children: [
+                      Text(
+                        'Check-In',
+                        style: GoogleFonts.poppins(
+                          color: AppColors.brandGreen.withValues(alpha: 0.9),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(Icons.keyboard_double_arrow_right_rounded, 
+                           color: AppColors.brandGreen.withValues(alpha: 0.8), size: 20),
+                    ],
+                  ),
+                ),
+              ),
+
+              // The draggable Thumb
+              AnimatedPositioned(
+                duration: _isDragging ? Duration.zero : const Duration(milliseconds: 300),
+                curve: Curves.easeOutBack,
+                left: (sliderWidth / 2) - (thumbWidth / 2) + _dragPosition,
+                child: GestureDetector(
+                  onHorizontalDragStart: (_) {
+                    setState(() => _isDragging = true);
+                  },
+                  onHorizontalDragUpdate: (details) {
+                    setState(() {
+                      _dragPosition += details.delta.dx;
+                      if (_dragPosition > maxDrag) _dragPosition = maxDrag;
+                      if (_dragPosition < -maxDrag) _dragPosition = -maxDrag;
+                    });
+                  },
+                  onHorizontalDragEnd: (details) async {
+                    setState(() => _isDragging = false);
+                    
+                    if (_dragPosition > maxDrag * 0.75) {
+                      // Trigger Check-In
+                      setState(() => _dragPosition = maxDrag);
+                      
+                      Get.snackbar(
+                        'Checked In',
+                        'You have successfully checked in.',
+                        snackPosition: SnackPosition.TOP,
+                        backgroundColor: AppColors.brandGreen.withValues(alpha: 0.9),
+                        colorText: Colors.black,
+                        margin: const EdgeInsets.all(16),
+                        borderRadius: 12,
+                        icon: const Icon(Icons.check_circle_outline, color: Colors.black),
+                      );
+                      
+                      await Future.delayed(const Duration(milliseconds: 800));
+                    } else if (_dragPosition < -maxDrag * 0.75) {
+                      // Trigger Check-Out
+                      setState(() => _dragPosition = -maxDrag);
+                      
+                      Get.snackbar(
+                        'Checked Out',
+                        'You have successfully checked out.',
+                        snackPosition: SnackPosition.TOP,
+                        backgroundColor: const Color(0xFFFF4D4D).withValues(alpha: 0.9),
+                        colorText: Colors.white,
+                        margin: const EdgeInsets.all(16),
+                        borderRadius: 12,
+                        icon: const Icon(Icons.logout_rounded, color: Colors.white),
+                      );
+                      
+                      await Future.delayed(const Duration(milliseconds: 800));
+                    }
+                    
+                    // Snap back to center
+                    if (mounted) {
+                      setState(() => _dragPosition = 0.0);
+                    }
+                  },
+                  child: Container(
+                    width: thumbWidth,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: activeColor,
+                      borderRadius: BorderRadius.circular(28),
+                      boxShadow: [
+                        BoxShadow(
+                          color: activeColor.withValues(alpha: 0.4),
+                          blurRadius: 12,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Icon(
+                        Icons.swap_horiz_rounded,
+                        color: _dragPosition == 0 ? Colors.black87 : Colors.black,
+                        size: 32,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 }

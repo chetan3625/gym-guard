@@ -38,13 +38,12 @@ class PlanCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final effectiveWidth = forcedWidth ?? 364.w * scale;
-    final effectiveHeight = forcedHeight ?? 210.h * scale;
+    final effectiveHeight = forcedHeight;
     final radius = 26.r * scale;
 
     return Center(
       child: SizedBox(
         width: effectiveWidth,
-        height: effectiveHeight,
         child: ClipRRect(
           borderRadius: BorderRadius.circular(radius),
           child: BackdropFilter(
@@ -53,6 +52,9 @@ class PlanCard extends StatelessWidget {
               sigmaY: 12.r * scale,
             ),
             child: Container(
+              constraints: BoxConstraints(
+                minHeight: effectiveHeight ?? 210.h * scale,
+              ),
               padding: customContentPadding ??
                   EdgeInsets.fromLTRB(
                     18.w * scale,
@@ -63,8 +65,8 @@ class PlanCard extends StatelessWidget {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    Colors.white.withOpacity(0.06),
-                    Colors.black.withOpacity(0.62),
+                    Colors.white.withValues(alpha: 0.06),
+                    Colors.black.withValues(alpha: 0.62),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -73,18 +75,18 @@ class PlanCard extends StatelessWidget {
                 border: Border.all(
                   color: isSelected
                       ? option.borderColor
-                      : option.borderColor.withOpacity(0.45),
+                      : option.borderColor.withValues(alpha: 0.45),
                   width: isSelected ? 2.4.w * scale : 1.2.w * scale,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.45),
+                    color: Colors.black.withValues(alpha: 0.45),
                     blurRadius: 18.r * scale,
                     offset: Offset(0, 12.h * scale),
                   ),
                   if (isSelected)
                     BoxShadow(
-                      color: option.borderColor.withOpacity(0.35),
+                      color: option.borderColor.withValues(alpha: 0.35),
                       blurRadius: 24.r * scale,
                       spreadRadius: 1.2.w * scale,
                       offset: Offset(0, 6.h * scale),
@@ -92,6 +94,7 @@ class PlanCard extends StatelessWidget {
                 ],
               ),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (showAccentBar)
@@ -112,6 +115,8 @@ class PlanCard extends StatelessWidget {
                   SizedBox(height: 12.h * scale),
                   Text(
                     option.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.montserrat(
                       color: option.titleColor,
                       fontSize: (titleFontSize ?? 30.sp) * scale,
@@ -120,6 +125,8 @@ class PlanCard extends StatelessWidget {
                   ),
                   Text(
                     option.subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.montserrat(
                       color: Colors.white70,
                       fontSize: 14.5.sp * scale,
@@ -128,13 +135,15 @@ class PlanCard extends StatelessWidget {
                   SizedBox(height: 16.h * scale),
                   Text(
                     option.price,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.montserrat(
                       color: option.priceColor,
                       fontSize: 24.sp * scale,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const Spacer(),
+                  SizedBox(height: 18.h * scale),
                   if (showButton)
                     ConstrainedBox(
                       constraints: BoxConstraints(minHeight: 48.h * scale),
@@ -145,7 +154,7 @@ class PlanCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(18.r * scale),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.35),
+                              color: Colors.black.withValues(alpha: 0.35),
                               blurRadius: 12.r * scale,
                               offset: Offset(0, 6.h * scale),
                             ),

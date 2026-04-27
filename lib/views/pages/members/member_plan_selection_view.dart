@@ -1,5 +1,6 @@
 
 import 'package:azanto/controllers/member_plan_selection_controller.dart';
+import 'package:azanto/utils/member_search_mapper.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -7,11 +8,7 @@ class MemberPlanSelectionView extends GetView<MemberPlanSelectionController> {
   const MemberPlanSelectionView({super.key});
 
   String _getMemberName() {
-    final user = controller.searchedUser;
-    return user['first_name']?.toString() ??
-           user['name']?.toString() ??
-           user['phone']?.toString() ??
-           'Member';
+    return MemberSearchMapper.resolveMemberName(controller.searchedUser);
   }
 
   @override

@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:azanto/Services/login_services.dart';
 import 'package:azanto/Services/member_service.dart';
+import 'package:azanto/utils/member_search_mapper.dart';
 import 'package:azanto/views/pages/select_plan_page.dart';
 import 'package:azanto/views/widgets/corner_back_button.dart';
 import 'package:flutter/material.dart';
@@ -23,6 +24,7 @@ class _AddMemberFormPageState extends State<AddMemberFormPage> {
   final _phoneController = TextEditingController();
   late final MemberService _memberService;
   bool _isSearching = false;
+  Map<String, dynamic>? _searchedMember;
 
   @override
   void initState() {
@@ -30,10 +32,12 @@ class _AddMemberFormPageState extends State<AddMemberFormPage> {
     _memberService = Get.isRegistered<MemberService>()
         ? Get.find<MemberService>()
         : MemberService();
+    _phoneController.addListener(_clearSearchResultOnInputChange);
   }
 
   @override
   void dispose() {
+    _phoneController.removeListener(_clearSearchResultOnInputChange);
     _phoneController.dispose();
     super.dispose();
   }
@@ -172,6 +176,15 @@ class _AddMemberFormPageState extends State<AddMemberFormPage> {
                   scale: scale,
                   onSearchTap: _onSearchTap,
                 ),
+                SizedBox(height: 18 * scale),
+                if (_searchedMember != null) ...[
+                  _SearchedMemberTile(
+                    member: _searchedMember!,
+                    scale: scale,
+                    onTap: _openPlanSelection,
+                  ),
+                  SizedBox(height: 18 * scale),
+                ],
                 const Spacer(),
                 SizedBox(height: 20 * scale),
                 SizedBox(
@@ -211,16 +224,19 @@ class _AddMemberFormPageState extends State<AddMemberFormPage> {
       debugPrint('=== ADD MEMBER SEARCH RESULT ===');
       debugPrint('Phone: $phone');
       debugPrint('Raw result: $result');
-      debugPrint('User ID: ${result?['user_id'] ?? result?['id'] ?? 'not found'}');
-      debugPrint('First Name: ${result?['first_name'] ?? result?['name'] ?? 'not found'}');
+      debugPrint(
+        'User ID: ${result == null ? 'not found' : MemberSearchMapper.resolveUserId(result) ?? 'not found'}',
+      );
+      debugPrint(
+        'Member Name: ${result == null ? 'not found' : MemberSearchMapper.resolveMemberName(result)}',
+      );
       debugPrint('Avatar URL: ${result?['avatar_url'] ?? 'not found'}');
       debugPrint('================================');
 
       if (!mounted) return;
 
       if (result != null) {
-        final name = _resolveMemberName(result);
-        final userId = _resolveUserId(result);
+        final userId = MemberSearchMapper.resolveUserId(result);
         if (userId == null || userId.isEmpty) {
           Get.snackbar(
             'Member lookup failed',
@@ -229,15 +245,14 @@ class _AddMemberFormPageState extends State<AddMemberFormPage> {
           );
           return;
         }
-        Get.to(
-          () => SelectPlanPage(name: name, phone: phone, userId: userId),
-          transition: Transition.downToUp,
-        );
+        setState(() => _searchedMember = result);
       } else {
+        setState(() => _searchedMember = null);
         Get.snackbar('Not found', 'No member found with this number');
       }
     } on ApiException catch (e) {
       if (!mounted) return;
+      setState(() => _searchedMember = null);
       Get.snackbar(
         'Member search failed',
         e.detailMessage,
@@ -250,35 +265,100 @@ class _AddMemberFormPageState extends State<AddMemberFormPage> {
     }
   }
 
-  String _resolveMemberName(Map<String, dynamic> result) {
-    final candidates = <dynamic>[
-      result['first_name'],
-      result['name'],
-      result['full_name'],
-      result['fullName'],
-      result['phone'],
-    ];
-
-    for (final candidate in candidates) {
-      final text = candidate?.toString().trim() ?? '';
-      if (text.isNotEmpty) return text;
-    }
-    return 'Member';
+  void _clearSearchResultOnInputChange() {
+    if (_searchedMember == null) return;
+    final searchedPhone = MemberSearchMapper.resolvePhone(_searchedMember!);
+    if (searchedPhone == _phoneController.text.trim()) return;
+    setState(() => _searchedMember = null);
   }
 
-  String? _resolveUserId(Map<String, dynamic> result) {
-    final candidates = <dynamic>[
-      result['user_id'],
-      result['id'],
-      result['_id'],
-      result['member_id'],
-    ];
+  void _openPlanSelection() {
+    final result = _searchedMember;
+    if (result == null) return;
 
-    for (final candidate in candidates) {
-      final text = candidate?.toString().trim() ?? '';
-      if (text.isNotEmpty) return text;
+    final name = MemberSearchMapper.resolveMemberName(result);
+    final userId = MemberSearchMapper.resolveUserId(result);
+    final memberPhone =
+        MemberSearchMapper.resolvePhone(result) ?? _phoneController.text.trim();
+
+    if (userId == null || userId.isEmpty) {
+      Get.snackbar(
+        'Member lookup failed',
+        'User ID was missing from the search response',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
     }
-    return null;
+
+    Get.to(
+      () => SelectPlanPage(name: name, phone: memberPhone, userId: userId),
+      transition: Transition.downToUp,
+    );
+  }
+
+}
+
+class _SearchedMemberTile extends StatelessWidget {
+  const _SearchedMemberTile({
+    required this.member,
+    required this.scale,
+    required this.onTap,
+  });
+
+  final Map<String, dynamic> member;
+  final double scale;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final memberName = MemberSearchMapper.resolveMemberName(member);
+    final avatarUrl = member['avatar_url']?.toString().trim();
+    final hasAvatar = avatarUrl != null && avatarUrl.isNotEmpty;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color.fromRGBO(0, 0, 0, 0.42),
+        borderRadius: BorderRadius.circular(22 * scale),
+        border: Border.all(
+          color: const Color.fromRGBO(255, 255, 255, 0.10),
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: ListTile(
+          onTap: onTap,
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: 14 * scale,
+            vertical: 6 * scale,
+          ),
+          leading: CircleAvatar(
+            radius: 24 * scale,
+            backgroundColor: const Color.fromRGBO(255, 255, 255, 0.12),
+            backgroundImage: hasAvatar ? NetworkImage(avatarUrl) : null,
+            child: hasAvatar
+                ? null
+                : Icon(
+                    Icons.person_outline,
+                    color: Colors.white,
+                    size: 24 * scale,
+                  ),
+          ),
+          title: Text(
+            memberName,
+            style: GoogleFonts.montserrat(
+              color: Colors.white,
+              fontSize: 15 * scale,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          trailing: Icon(
+            Icons.chevron_right_rounded,
+            color: Colors.white,
+            size: 24 * scale,
+          ),
+        ),
+      ),
+    );
   }
 }
 

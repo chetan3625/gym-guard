@@ -182,6 +182,48 @@ class GymService {
     return GymModel.fromJson(gym);
   }
 
+  Future<String?> getGymLogo({required String gymId}) async {
+    final token = _sessionService.normalizedToken;
+    if (token == null || token.isEmpty) {
+      throw ApiException('Session expired. Please login again.');
+    }
+
+    http.Response response = await _getGymLogo(
+      token: token,
+      gymId: gymId,
+    );
+
+    if (_isAuthError(response.statusCode)) {
+      final refreshed = await TokenRefreshService(
+        sessionService: _sessionService,
+      ).refreshToken();
+      final newToken = _sessionService.normalizedToken;
+      if (refreshed && newToken != null && newToken.isNotEmpty) {
+        response = await _getGymLogo(
+          token: newToken,
+          gymId: gymId,
+        );
+      }
+    }
+
+    final decoded = _decodeResponseBody(response.body);
+    ApiResponseLogger.logResponse('Get Gym Logo API', response);
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      if (decoded is Map && decoded['logo_url'] is String) {
+        final logoUrl = (decoded['logo_url'] as String).trim();
+        return logoUrl.isEmpty ? null : logoUrl;
+      }
+      return null;
+    }
+
+    throw ApiException(
+      _extractMessage(decoded, fallback: 'Unable to fetch gym logo'),
+      statusCode: response.statusCode,
+      detail: _extractDetail(decoded),
+    );
+  }
+
   Future<GymModel> updateGymDetails({
     required String id,
     required String name,
@@ -249,6 +291,56 @@ class GymService {
 
     throw ApiException(
       _extractMessage(decoded, fallback: 'Unable to update gym details'),
+      statusCode: response.statusCode,
+      detail: _extractDetail(decoded),
+    );
+  }
+
+  Future<String> uploadGymLogo({
+    required String gymId,
+    required String filePath,
+  }) async {
+    final token = _sessionService.normalizedToken;
+    if (token == null || token.isEmpty) {
+      throw ApiException('Session expired. Please login again.');
+    }
+
+    http.Response response = await _postUploadGymLogo(
+      token: token,
+      gymId: gymId,
+      filePath: filePath,
+    );
+
+    if (_isAuthError(response.statusCode)) {
+      final refreshed = await TokenRefreshService(
+        sessionService: _sessionService,
+      ).refreshToken();
+      final newToken = _sessionService.normalizedToken;
+      if (refreshed && newToken != null && newToken.isNotEmpty) {
+        response = await _postUploadGymLogo(
+          token: newToken,
+          gymId: gymId,
+          filePath: filePath,
+        );
+      }
+    }
+
+    final decoded = _decodeResponseBody(response.body);
+    ApiResponseLogger.logResponse('Upload Gym Logo API', response);
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      if (decoded is Map && decoded['logo_url'] is String) {
+        return (decoded['logo_url'] as String).trim();
+      }
+      throw ApiException(
+        _extractMessage(decoded, fallback: 'Logo uploaded but URL missing'),
+        statusCode: response.statusCode,
+        detail: _extractDetail(decoded),
+      );
+    }
+
+    throw ApiException(
+      _extractMessage(decoded, fallback: 'Unable to upload gym logo'),
       statusCode: response.statusCode,
       detail: _extractDetail(decoded),
     );
@@ -346,6 +438,36 @@ class GymService {
         'is_active': isActive,
       }),
     );
+  }
+
+  Future<http.Response> _getGymLogo({
+    required String token,
+    required String gymId,
+  }) {
+    return _client.get(
+      Uri.parse('${GymApiEndpoints.getLogo}/$gymId'),
+      headers: <String, String>{
+        'Authorization': 'Bearer $token',
+        'accept': 'application/json',
+      },
+    );
+  }
+
+  Future<http.Response> _postUploadGymLogo({
+    required String token,
+    required String gymId,
+    required String filePath,
+  }) async {
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('${GymApiEndpoints.uploadLogo}/$gymId'),
+    );
+    request.headers['Authorization'] = 'Bearer $token';
+    request.headers['accept'] = 'application/json';
+    request.files.add(await http.MultipartFile.fromPath('file', filePath));
+
+    final streamedResponse = await request.send();
+    return http.Response.fromStream(streamedResponse);
   }
 
   bool _isAuthError(int statusCode) => statusCode == 401 || statusCode == 403;
