@@ -43,12 +43,12 @@ class BackendErrorScreen extends StatelessWidget {
             child: Container(
               width: 180,
               height: 180,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color.fromRGBO(60, 165, 255, 0.16),
+                color: Color.fromRGBO(60, 165, 255, 0.16),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color.fromRGBO(60, 165, 255, 0.18),
+                    color: Color.fromRGBO(60, 165, 255, 0.18),
                     blurRadius: 90,
                     spreadRadius: 32,
                   ),
@@ -62,12 +62,12 @@ class BackendErrorScreen extends StatelessWidget {
             child: Container(
               width: 220,
               height: 220,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color.fromRGBO(143, 224, 255, 0.08),
+                color: Color.fromRGBO(143, 224, 255, 0.08),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color.fromRGBO(143, 224, 255, 0.12),
+                    color: Color.fromRGBO(143, 224, 255, 0.12),
                     blurRadius: 110,
                     spreadRadius: 40,
                   ),
@@ -97,11 +97,11 @@ class BackendErrorScreen extends StatelessWidget {
                       color: const Color.fromRGBO(255, 255, 255, 0.05),
                       borderRadius: BorderRadius.circular(32),
                       border: Border.all(color: const Color.fromRGBO(255, 255, 255, 0.10)),
-                      boxShadow: [
+                      boxShadow: const [
                         BoxShadow(
-                          color: const Color.fromRGBO(0, 0, 0, 0.32),
+                          color: Color.fromRGBO(0, 0, 0, 0.32),
                           blurRadius: 28,
-                          offset: const Offset(0, 16),
+                          offset: Offset(0, 16),
                         ),
                       ],
                     ),
@@ -202,8 +202,8 @@ class BackendErrorScreen extends StatelessWidget {
                                     BackendErrorWidgets.hideBackendError(),
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: AppColors.white,
-                                  side: BorderSide(
-                                    color: const Color.fromRGBO(255, 255, 255, 0.18),
+                                  side: const BorderSide(
+                                    color: Color.fromRGBO(255, 255, 255, 0.18),
                                   ),
                                   padding: const EdgeInsets.symmetric(
                                     vertical: 16,

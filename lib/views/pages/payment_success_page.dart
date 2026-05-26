@@ -71,8 +71,8 @@ class _PaymentSuccessPageState extends State<PaymentSuccessPage> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withOpacity(0.45),
-                    Colors.black.withOpacity(0.75),
+                    Colors.black.withValues(alpha: 0.45),
+                    Colors.black.withValues(alpha: 0.75),
                   ],
                 ),
               ),
@@ -90,13 +90,9 @@ class _PaymentSuccessPageState extends State<PaymentSuccessPage> {
                 children: [
                   Align(
                     alignment: Alignment.topLeft,
-                    child: ResponsiveCornerBackButton(
+                    child: CornerBackButton(
                       onTap: () => Get.back(),
-                      baseWidth: 393,
-                      baseHeight: 852,
-                      x: 0,
-                      y: 0,
-                      baseSize: 36,
+                      size: 36 * scale,
                     ),
                   ),
                   const Spacer(),
@@ -232,7 +228,7 @@ Future<void> _shareReceipt({
                 pw.Container(
                   width: 46,
                   height: 46,
-                  decoration: pw.BoxDecoration(
+                  decoration: const pw.BoxDecoration(
                     color: PdfColor.fromInt(0xFFB8F9C4),
                     shape: pw.BoxShape.circle,
                   ),
@@ -250,8 +246,9 @@ Future<void> _shareReceipt({
             pw.Container(
               padding: const pw.EdgeInsets.all(14),
               decoration: pw.BoxDecoration(
-                color: PdfColor.fromInt(0x0DFFFFFF),
-                border: pw.Border.all(color: PdfColor.fromInt(0xFF66D122)),
+                color: const PdfColor.fromInt(0x0DFFFFFF),
+                border:
+                    pw.Border.all(color: const PdfColor.fromInt(0xFF66D122)),
                 borderRadius: pw.BorderRadius.circular(12),
               ),
               child: pw.Column(
@@ -276,7 +273,7 @@ Future<void> _shareReceipt({
             pw.Container(
               padding: const pw.EdgeInsets.all(14),
               decoration: pw.BoxDecoration(
-                color: PdfColor.fromInt(0x0DFFFFFF),
+                color: const PdfColor.fromInt(0x0DFFFFFF),
                 borderRadius: pw.BorderRadius.circular(12),
               ),
               child: pw.Column(
@@ -392,12 +389,12 @@ class _SuccessCard extends StatelessWidget {
             30 * scale,
           ),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.12),
+            color: Colors.white.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(28 * scale),
-            border: Border.all(color: Colors.white.withOpacity(0.14)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.45),
+                color: Colors.black.withValues(alpha: 0.45),
                 blurRadius: 22 * scale,
                 offset: Offset(0, 12 * scale),
               ),
@@ -408,8 +405,8 @@ class _SuccessCard extends StatelessWidget {
               Container(
                 width: 78 * scale,
                 height: 78 * scale,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFB8F9C4),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFB8F9C4),
                   shape: BoxShape.circle,
                 ),
                 child: Center(
@@ -445,7 +442,7 @@ class _SuccessCard extends StatelessWidget {
                   16 * scale,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.25),
+                  color: Colors.black.withValues(alpha: 0.25),
                   borderRadius: BorderRadius.circular(16 * scale),
                   border: Border.all(
                     color: const Color(0xFF66D122),
@@ -547,11 +544,11 @@ class _SecondaryButton extends StatelessWidget {
     return Container(
       height: 59 * scale,
       decoration: BoxDecoration(
-        color: const Color(0xFF1C1C1C).withOpacity(0.9),
+        color: const Color(0xFF1C1C1C).withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(24 * scale),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.35),
+            color: Colors.black.withValues(alpha: 0.35),
             blurRadius: 14 * scale,
             offset: Offset(0, 8 * scale),
           ),

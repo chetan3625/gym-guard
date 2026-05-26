@@ -99,7 +99,7 @@ class _QrScannerPageState extends State<QrScannerPage> {
       title,
       message,
       snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.black.withOpacity(0.85),
+      backgroundColor: Colors.black.withValues(alpha: 0.85),
       colorText: Colors.white,
       margin: const EdgeInsets.all(16),
       duration: const Duration(seconds: 3),
@@ -179,12 +179,12 @@ class _ScannerOverlay extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: AppColors.brandGreen.withOpacity(0.9),
+              color: AppColors.brandGreen.withValues(alpha: 0.9),
               width: 3,
             ),
             boxShadow: [
               BoxShadow(
-                color: AppColors.brandGreen.withOpacity(0.25),
+                color: AppColors.brandGreen.withValues(alpha: 0.25),
                 blurRadius: 18,
                 spreadRadius: 2,
               ),

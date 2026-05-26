@@ -75,7 +75,7 @@ class _SplashLogoState extends StatelessWidget {
             child: Text(
               'Checking connection...',
               style: GoogleFonts.inter(
-                color: AppColors.white.withOpacity(0.78),
+                color: AppColors.white.withValues(alpha: 0.78),
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 letterSpacing: 0.2,
@@ -122,15 +122,15 @@ class _OfflineSplashState extends StatelessWidget {
                   end: Alignment.bottomRight,
                   colors: [Color(0xCC0F1826), Color(0xE6141419)],
                 ),
-                border: Border.all(color: Colors.white.withOpacity(0.10)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF46B8FF).withOpacity(0.12),
+                    color: const Color(0xFF46B8FF).withValues(alpha: 0.12),
                     blurRadius: 40,
                     spreadRadius: 2,
                   ),
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.35),
+                    color: Colors.black.withValues(alpha: 0.35),
                     blurRadius: 26,
                     offset: const Offset(0, 16),
                   ),
@@ -154,10 +154,10 @@ class _OfflineSplashState extends StatelessWidget {
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.06),
+                          color: Colors.white.withValues(alpha: 0.06),
                           borderRadius: BorderRadius.circular(999),
                           border: Border.all(
-                            color: Colors.white.withOpacity(0.08),
+                            color: Colors.white.withValues(alpha: 0.08),
                           ),
                         ),
                         child: Text(
@@ -195,7 +195,7 @@ class _OfflineSplashState extends StatelessWidget {
                       'Azanto needs a live connection to load your gym, plans, and latest session safely.',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.inter(
-                        color: Colors.white.withOpacity(0.72),
+                        color: Colors.white.withValues(alpha: 0.72),
                         fontSize: isCompact ? 13.5 : 14.5,
                         height: 1.45,
                       ),
@@ -205,17 +205,17 @@ class _OfflineSplashState extends StatelessWidget {
                       width: double.infinity,
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.04),
+                        color: Colors.white.withValues(alpha: 0.04),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: Colors.white.withOpacity(0.06),
+                          color: Colors.white.withValues(alpha: 0.06),
                         ),
                       ),
                       child: Text(
                         'Turn on Wi-Fi or mobile data, then tap retry. We will also continue automatically as soon as your connection is back.',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.inter(
-                          color: Colors.white.withOpacity(0.78),
+                          color: Colors.white.withValues(alpha: 0.78),
                           fontSize: 13,
                           height: 1.5,
                         ),

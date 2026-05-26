@@ -4,15 +4,19 @@ import 'package:azanto/Services/token_refresh_manager.dart';
 import 'package:azanto/Memberside/View/member_payment_page.dart';
 import 'package:azanto/Memberside/View/member_progress_page.dart';
 import 'package:azanto/Memberside/View/member_profile_page.dart';
+import 'package:azanto/Memberside/View/member_notifications_page.dart';
+import 'package:azanto/Memberside/View/member_settings_page.dart';
 import 'package:azanto/Memberside/View/member_workout_page.dart';
 import 'package:azanto/Memberside/constants/Common_widgets/member_bottom_nav_bar.dart';
 import 'package:azanto/core/theme/app_colors.dart';
 import 'package:azanto/routes/app_routes.dart';
+import 'package:azanto/core/responsive/responsive.dart';
+import 'package:azanto/views/widgets/azanto_mobile_shell.dart';
 import 'package:azanto/views/widgets/common_app_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class MemberDashboardScreen extends StatefulWidget {
   const MemberDashboardScreen({super.key});
@@ -60,27 +64,35 @@ class _MemberDashboardScreenState extends State<MemberDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const AzantoAppBar(),
-      backgroundColor: const Color(0xFF262626),
+      backgroundColor: AppColors.mobileScaffold,
+      appBar: AzantoAppBar(
+        onSettingsTap: () => Get.to<void>(() => const MemberSettingsPage()),
+        onNotificationsTap: () =>
+            Get.to<void>(() => const MemberNotificationsPage()),
+      ),
       body: SafeArea(
+        top: false,
         bottom: false,
-        child: IndexedStack(
-          index: _currentIndex,
-          children: [
-            _DashboardTab(
-              memberName: _memberName,
-              memberInitial: _memberInitial,
-              onOpenProfile: () => setState(() => _currentIndex = 4),
-            ),
-            const MemberWorkoutPage(),
-            const MemberProgressPage(),
-            const MemberPaymentPage(),
-            MemberProfilePage(
-              memberName: _memberName,
-              memberInitial: _memberInitial,
-              onLogout: _logout,
-            ),
-          ],
+        child: AzantoPageBackground(
+          child: IndexedStack(
+            index: _currentIndex,
+            children: [
+              _DashboardTab(
+                memberName: _memberName,
+                memberInitial: _memberInitial,
+                onOpenProfile: () => setState(() => _currentIndex = 4),
+              ),
+              const MemberWorkoutPage(),
+              const MemberProgressPage(),
+              const MemberPaymentPage(),
+              MemberProfilePage(
+                memberName: _memberName,
+                memberInitial: _memberInitial,
+                onLogout: _logout,
+                onProfileUpdated: _loadMemberIdentity,
+              ),
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: MemberBottomNavBar(
@@ -106,108 +118,104 @@ class _DashboardTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = GoogleFonts.poppinsTextTheme(Theme.of(context).textTheme);
 
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Color(0xFF3A3A3A),
-            Color(0xFF343434),
-            Color(0xFF2B2B2B),
-          ],
-        ),
-      ),
-      child: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(14, 16, 14, 18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _GreetingCard(
-                    memberInitial: memberInitial,
-                    memberName: memberName,
-                    onTap: onOpenProfile,
-                  ),
-                  const SizedBox(height: 16),
-                  const _BiDirectionalSlider(),
-                  const SizedBox(height: 14),
-                  const Row(
-                    children: [
-                      Expanded(child: _MembershipCard()),
-                      SizedBox(width: 10),
-                      Expanded(child: _StreakCard()),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  const _PaymentCard(),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Text(
-                        "Today's Workout",
-                        style: textTheme.titleMedium?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 22,
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        'Monday, June 12',
-                        style: textTheme.bodySmall?.copyWith(
-                          color: Colors.white38,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  const _WorkoutCard(),
-                  const SizedBox(height: 18),
-                  Text(
-                    'Quick Action',
-                    style: textTheme.titleMedium?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 22,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final pad = azantoContentPadding(context);
+        final isWide =
+            MediaQuery.sizeOf(context).width >= ResponsiveBreakpoints.phone;
+        final quickActionGap = constraints.maxWidth < 360 ? 6.0 : 10.0;
+
+        return Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: pad,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _GreetingCard(
+                      memberInitial: memberInitial,
+                      memberName: memberName,
+                      onTap: onOpenProfile,
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  const Row(
-                    children: [
-                      Expanded(
-                        child: _QuickActionCard(
-                          icon: LucideIcons.fileText,
-                          label: 'View Plan',
+                    const SizedBox(height: 16),
+                    const _BiDirectionalSlider(),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        const Expanded(child: _MembershipCard()),
+                        SizedBox(width: isWide ? 14 : 10),
+                        const Expanded(child: _StreakCard()),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    const _PaymentCard(),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Text(
+                          "Today's Workout",
+                          style: textTheme.titleMedium?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
                         ),
-                      ),
-                      SizedBox(width: 10),
-                      Expanded(
-                        child: _QuickActionCard(
-                          icon: LucideIcons.calendarDays,
-                          label: 'Attendance',
+                        const Spacer(),
+                        Text(
+                          'Monday, June 12',
+                          style: textTheme.bodySmall?.copyWith(
+                            color: AppColors.textMuted,
+                            fontSize: 15,
+                          ),
                         ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    const _WorkoutCard(),
+                    const SizedBox(height: 18),
+                    Text(
+                      'Quick Action',
+                      style: textTheme.titleMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
                       ),
-                      SizedBox(width: 10),
-                      Expanded(
-                        child: _QuickActionCard(
-                          icon: LucideIcons.qrCode,
-                          label: 'Gym ID',
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: _QuickActionCard(
+                            icon: LucideIcons.fileText,
+                            label: 'View Plan',
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  const _QuoteCard(),
-                ],
+                        SizedBox(width: quickActionGap),
+                        const Expanded(
+                          child: _QuickActionCard(
+                            icon: LucideIcons.calendarDays,
+                            label: 'Attendance',
+                          ),
+                        ),
+                        SizedBox(width: quickActionGap),
+                        const Expanded(
+                          child: _QuickActionCard(
+                            icon: LucideIcons.qrCode,
+                            label: 'Gym ID',
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    const _QuoteCard(),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
-      ),
+          ],
+        );
+      },
     );
   }
 }
@@ -233,10 +241,10 @@ class _GreetingCard extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              height: 58,
-              width: 58,
+              height: 75,
+              width: 75,
               decoration: const BoxDecoration(
-                color: Color(0xFF313131),
+                color: AppColors.cardSurfaceAlt,
                 shape: BoxShape.circle,
               ),
               child: Center(
@@ -244,8 +252,8 @@ class _GreetingCard extends StatelessWidget {
                   memberInitial,
                   style: GoogleFonts.poppins(
                     color: AppColors.brandGreen,
-                    fontSize: 29,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 32,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -259,16 +267,16 @@ class _GreetingCard extends StatelessWidget {
                     'Good Morning , $memberName',
                     style: GoogleFonts.poppins(
                       color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     'Push Your limits Today!',
                     style: GoogleFonts.poppins(
-                      color: Colors.white38,
-                      fontSize: 17,
+                      color: AppColors.textMuted,
+                      fontSize: 15,
                       fontWeight: FontWeight.w400,
                     ),
                   ),
@@ -289,8 +297,9 @@ class _MembershipCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(13),
-      decoration: _cardDecoration(),
+      height: 131,
+      padding: const EdgeInsets.all(14),
+      decoration: azantoMetricCardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -299,39 +308,38 @@ class _MembershipCard extends StatelessWidget {
               const _MetricIcon(icon: LucideIcons.shieldCheck),
               const Spacer(),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppColors.brandGreen.withValues(alpha: 0.16),
-                  borderRadius: BorderRadius.circular(30),
+                  color: AppColors.activeBadgeGreen.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
                   'ACTIVE',
                   style: GoogleFonts.poppins(
-                    color: AppColors.brandGreen,
-                    fontSize: 12,
+                    color: AppColors.activeBadgeGreen,
+                    fontSize: 10,
                     fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5,
+                    letterSpacing: 1,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 22),
+          const Spacer(),
           Text(
             'Membership',
             style: GoogleFonts.poppins(
-              color: Colors.white54,
-              fontSize: 16,
+              color: AppColors.textMuted,
+              fontSize: 15,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
             'Basic Plan',
             style: GoogleFonts.poppins(
               color: Colors.white,
-              fontSize: 19,
-              fontWeight: FontWeight.w700,
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -346,26 +354,39 @@ class _StreakCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(13),
-      decoration: _cardDecoration(highlight: true),
+      height: 131,
+      padding: const EdgeInsets.all(14),
+      decoration: azantoMetricCardDecoration(highlight: true),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const _MetricIcon(icon: LucideIcons.flame),
+              Container(
+                height: 32,
+                width: 35,
+                decoration: BoxDecoration(
+                  color: AppColors.streakIconBg,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFF333333)),
+                ),
+                child: const Icon(
+                  LucideIcons.flame,
+                  color: AppColors.brandGreen,
+                  size: 20,
+                ),
+              ),
               const SizedBox(width: 10),
               Text(
                 'Streak',
                 style: GoogleFonts.poppins(
-                  color: Colors.white60,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w500,
+                  color: AppColors.textMuted,
+                  fontSize: 15,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          const Spacer(),
           RichText(
             text: TextSpan(
               children: [
@@ -373,16 +394,16 @@ class _StreakCard extends StatelessWidget {
                   text: '12',
                   style: GoogleFonts.poppins(
                     color: AppColors.brandGreen,
-                    fontSize: 29,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 32,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 TextSpan(
                   text: ' days',
                   style: GoogleFonts.poppins(
-                    color: Colors.white70,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
@@ -400,19 +421,21 @@ class _PaymentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      height: 79,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: _cardDecoration(),
+      decoration: azantoMetricCardDecoration(borderColor: Colors.transparent),
       child: Row(
         children: [
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
                   'Next Payment due',
                   style: GoogleFonts.poppins(
-                    color: Colors.white54,
-                    fontSize: 16,
+                    color: AppColors.textMuted,
+                    fontSize: 15,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -420,8 +443,8 @@ class _PaymentCard extends StatelessWidget {
                   'July 12,2026',
                   style: GoogleFonts.poppins(
                     color: Colors.white,
-                    fontSize: 19,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
@@ -429,9 +452,11 @@ class _PaymentCard extends StatelessWidget {
           ),
           Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(7),
               gradient: const LinearGradient(
-                colors: [Color(0xFF86FF24), Color(0xFF63D615)],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [AppColors.payButtonStart, AppColors.payButtonEnd],
               ),
               boxShadow: [
                 BoxShadow(
@@ -473,8 +498,9 @@ class _WorkoutCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      height: 79,
       padding: const EdgeInsets.all(11),
-      decoration: _cardDecoration(),
+      decoration: azantoMetricCardDecoration(borderColor: Colors.transparent),
       child: Row(
         children: [
           Container(
@@ -504,17 +530,16 @@ class _WorkoutCard extends StatelessWidget {
                   'Chest & Triceps',
                   style: GoogleFonts.poppins(
                     color: Colors.white,
-                    fontSize: 19,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   '6 Exercise . 40 mins',
                   style: GoogleFonts.poppins(
-                    color: Colors.white54,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
+                    color: AppColors.textMuted,
+                    fontSize: 13,
                   ),
                 ),
               ],
@@ -558,27 +583,35 @@ class _QuickActionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
-      decoration: _cardDecoration(),
+      height: 92,
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+      decoration: azantoMetricCardDecoration(borderColor: Colors.transparent),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            height: 42,
-            width: 42,
+            height: 37,
+            width: 37,
             decoration: const BoxDecoration(
-              color: Color(0xFF3A3A3A),
+              color: AppColors.cardIconCircle,
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: AppColors.brandGreen, size: 18),
           ),
-          const SizedBox(height: 10),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(
-              color: Colors.white70,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
+          const SizedBox(height: 8),
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label,
+                maxLines: 1,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ),
         ],
@@ -594,24 +627,28 @@ class _QuoteCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 18),
-      decoration: _cardDecoration(),
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2E2E2E),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.cardIconCircle),
+      ),
       child: Column(
         children: [
           const Icon(
             Icons.emoji_events_rounded,
             color: AppColors.brandGreen,
-            size: 28,
+            size: 27,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           Text(
             '"Success usually comes to those who are too busy to be looking for it."',
             textAlign: TextAlign.center,
             style: GoogleFonts.poppins(
-              color: Colors.white54,
-              fontSize: 17,
+              color: const Color(0xFFACABAA),
+              fontSize: 14,
               fontWeight: FontWeight.w500,
-              height: 1.5,
+              height: 1.45,
             ),
           ),
         ],
@@ -639,24 +676,6 @@ class _MetricIcon extends StatelessWidget {
   }
 }
 
-BoxDecoration _cardDecoration({bool highlight = false}) {
-  return BoxDecoration(
-    color: const Color(0xFF353535),
-    borderRadius: BorderRadius.circular(8),
-    border: Border.all(
-      color: highlight ? Colors.white38 : Colors.white.withValues(alpha: 0.035),
-      width: highlight ? 1.1 : 1,
-    ),
-    boxShadow: [
-      BoxShadow(
-        color: Colors.black.withValues(alpha: 0.18),
-        blurRadius: 12,
-        offset: const Offset(0, 8),
-      ),
-    ],
-  );
-}
-
 class _BiDirectionalSlider extends StatefulWidget {
   const _BiDirectionalSlider();
 
@@ -679,11 +698,15 @@ class _BiDirectionalSliderState extends State<_BiDirectionalSlider> {
         // Determine colors based on drag position
         Color trackColor = const Color(0xFF1C1C1C);
         Color activeColor = Colors.white;
-        
+
         if (_dragPosition > 0) {
-          activeColor = Color.lerp(Colors.white, AppColors.brandGreen, _dragPosition / maxDrag) ?? AppColors.brandGreen;
+          activeColor = Color.lerp(Colors.white, AppColors.brandGreen,
+                  _dragPosition / maxDrag) ??
+              AppColors.brandGreen;
         } else if (_dragPosition < 0) {
-          activeColor = Color.lerp(Colors.white, const Color(0xFFFF4D4D), -_dragPosition / maxDrag) ?? const Color(0xFFFF4D4D);
+          activeColor = Color.lerp(Colors.white, const Color(0xFFFF4D4D),
+                  -_dragPosition / maxDrag) ??
+              const Color(0xFFFF4D4D);
         }
 
         return Container(
@@ -715,8 +738,9 @@ class _BiDirectionalSliderState extends State<_BiDirectionalSlider> {
                   opacity: _dragPosition > 20 ? 0.0 : 1.0,
                   child: Row(
                     children: [
-                      Icon(Icons.keyboard_double_arrow_left_rounded, 
-                           color: const Color(0xFFFF4D4D).withValues(alpha: 0.8), size: 20),
+                      Icon(Icons.keyboard_double_arrow_left_rounded,
+                          color: const Color(0xFFFF4D4D).withValues(alpha: 0.8),
+                          size: 20),
                       const SizedBox(width: 4),
                       Text(
                         'Check-Out',
@@ -730,7 +754,7 @@ class _BiDirectionalSliderState extends State<_BiDirectionalSlider> {
                   ),
                 ),
               ),
-              
+
               // Check-In Text (Right)
               Positioned(
                 right: 24,
@@ -748,8 +772,9 @@ class _BiDirectionalSliderState extends State<_BiDirectionalSlider> {
                         ),
                       ),
                       const SizedBox(width: 4),
-                      Icon(Icons.keyboard_double_arrow_right_rounded, 
-                           color: AppColors.brandGreen.withValues(alpha: 0.8), size: 20),
+                      Icon(Icons.keyboard_double_arrow_right_rounded,
+                          color: AppColors.brandGreen.withValues(alpha: 0.8),
+                          size: 20),
                     ],
                   ),
                 ),
@@ -757,7 +782,9 @@ class _BiDirectionalSliderState extends State<_BiDirectionalSlider> {
 
               // The draggable Thumb
               AnimatedPositioned(
-                duration: _isDragging ? Duration.zero : const Duration(milliseconds: 300),
+                duration: _isDragging
+                    ? Duration.zero
+                    : const Duration(milliseconds: 300),
                 curve: Curves.easeOutBack,
                 left: (sliderWidth / 2) - (thumbWidth / 2) + _dragPosition,
                 child: GestureDetector(
@@ -773,41 +800,45 @@ class _BiDirectionalSliderState extends State<_BiDirectionalSlider> {
                   },
                   onHorizontalDragEnd: (details) async {
                     setState(() => _isDragging = false);
-                    
+
                     if (_dragPosition > maxDrag * 0.75) {
                       // Trigger Check-In
                       setState(() => _dragPosition = maxDrag);
-                      
+
                       Get.snackbar(
                         'Checked In',
                         'You have successfully checked in.',
                         snackPosition: SnackPosition.TOP,
-                        backgroundColor: AppColors.brandGreen.withValues(alpha: 0.9),
+                        backgroundColor:
+                            AppColors.brandGreen.withValues(alpha: 0.9),
                         colorText: Colors.black,
                         margin: const EdgeInsets.all(16),
                         borderRadius: 12,
-                        icon: const Icon(Icons.check_circle_outline, color: Colors.black),
+                        icon: const Icon(Icons.check_circle_outline,
+                            color: Colors.black),
                       );
-                      
+
                       await Future.delayed(const Duration(milliseconds: 800));
                     } else if (_dragPosition < -maxDrag * 0.75) {
                       // Trigger Check-Out
                       setState(() => _dragPosition = -maxDrag);
-                      
+
                       Get.snackbar(
                         'Checked Out',
                         'You have successfully checked out.',
                         snackPosition: SnackPosition.TOP,
-                        backgroundColor: const Color(0xFFFF4D4D).withValues(alpha: 0.9),
+                        backgroundColor:
+                            const Color(0xFFFF4D4D).withValues(alpha: 0.9),
                         colorText: Colors.white,
                         margin: const EdgeInsets.all(16),
                         borderRadius: 12,
-                        icon: const Icon(Icons.logout_rounded, color: Colors.white),
+                        icon: const Icon(Icons.logout_rounded,
+                            color: Colors.white),
                       );
-                      
+
                       await Future.delayed(const Duration(milliseconds: 800));
                     }
-                    
+
                     // Snap back to center
                     if (mounted) {
                       setState(() => _dragPosition = 0.0);
@@ -830,7 +861,8 @@ class _BiDirectionalSliderState extends State<_BiDirectionalSlider> {
                     child: Center(
                       child: Icon(
                         Icons.swap_horiz_rounded,
-                        color: _dragPosition == 0 ? Colors.black87 : Colors.black,
+                        color:
+                            _dragPosition == 0 ? Colors.black87 : Colors.black,
                         size: 32,
                       ),
                     ),

@@ -113,6 +113,7 @@ class HomeController extends GetxController {
     required String gymName,
     String? email,
     String? description,
+    String? logoUrl,
   }) async {
     await session.setGymId(gymId);
     showAddGymCard.value = false;
@@ -122,6 +123,7 @@ class HomeController extends GetxController {
       gymName: gymName,
       email: email,
       description: description,
+      logoUrl: logoUrl,
     );
   }
 
@@ -143,6 +145,7 @@ class HomeController extends GetxController {
         gymName: updatedGym.name,
         email: updatedGym.email,
         description: updatedGym.description,
+        logoUrl: updatedGym.logoUrl,
       );
     }
   }
@@ -170,11 +173,18 @@ class HomeController extends GetxController {
         final name = (gym['name'] ?? '').toString().trim();
         final email = (gym['email'] ?? '').toString().trim();
         final desc = gym['description']?.toString().trim();
+        String? logoUrl = gym['logo_url']?.toString().trim();
+        if ((logoUrl == null || logoUrl.isEmpty) && gymId.isNotEmpty) {
+          try {
+            logoUrl = await _gymService.getGymLogo(gymId: gymId);
+          } catch (_) {}
+        }
         gymSummary.value = GymSummaryData(
           gymId: gymId,
           gymName: name.isNotEmpty ? name : 'Your gym',
           email: email.isNotEmpty ? email : null,
           description: (desc != null && desc.isNotEmpty) ? desc : null,
+          logoUrl: (logoUrl != null && logoUrl.isNotEmpty) ? logoUrl : null,
         );
         return;
       }
@@ -188,12 +198,17 @@ class HomeController extends GetxController {
             : 'Your gym');
     final resolvedDescription = tokenPayload['gym_description'] as String? ??
         tokenPayload['gymDescription'] as String?;
+    final resolvedLogoUrl = tokenPayload['logo_url'] as String? ??
+        tokenPayload['logoUrl'] as String?;
     gymSummary.value = GymSummaryData(
       gymId: session.gymId,
       gymName: resolvedGymName,
       description: resolvedDescription?.trim().isEmpty ?? true
           ? null
           : resolvedDescription!.trim(),
+      logoUrl: resolvedLogoUrl?.trim().isEmpty ?? true
+          ? null
+          : resolvedLogoUrl!.trim(),
     );
   }
 
@@ -412,10 +427,12 @@ class GymSummaryData {
     required this.gymName,
     this.email,
     this.description,
+    this.logoUrl,
   });
 
   final String? gymId;
   final String gymName;
   final String? email;
   final String? description;
+  final String? logoUrl;
 }

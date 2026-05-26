@@ -231,9 +231,8 @@ class ApiServices {
         return {
           '_error': 'unauthorized',
           '_status_code': 401,
-          '_detail': body.isNotEmpty
-              ? body
-              : 'Invalid or expired refresh token',
+          '_detail':
+              body.isNotEmpty ? body : 'Invalid or expired refresh token',
         };
       }
 
@@ -272,6 +271,10 @@ class ApiServices {
         payload['detail'][0] is Map &&
         payload['detail'][0]['msg'] is String) {
       return payload['detail'][0]['msg'] as String;
+    }
+    if (payload is String && payload.trim().isNotEmpty) {
+      final message = payload.trim();
+      if (!message.startsWith('<html')) return message;
     }
     return fallback;
   }
@@ -335,15 +338,17 @@ class ApiServices {
       if (token == null) {
         throw ApiException('No auth token. Please login again.');
       }
+      final branchId = sessionService.branchId ?? gymId;
 
       final response = await http.post(
-        Uri.parse(MembershipApiEndpoints.membershipPurchase),
+        Uri.parse(GymApiEndpoints.addMember),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
         body: jsonEncode({
           'gym_id': gymId,
+          'branch_id': branchId,
           'plan_id': planId,
           'user_id': userId,
           'amount': amount,
@@ -352,8 +357,8 @@ class ApiServices {
       );
 
       final body = response.body;
-      ApiResponseLogger.logResponse('Membership Purchase API', response);
-      final decoded = body.isNotEmpty ? jsonDecode(body) : {};
+      ApiResponseLogger.logResponse('Add Member API', response);
+      final decoded = _decodeResponseBody(body);
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         return decoded is Map<String, dynamic>
@@ -363,7 +368,9 @@ class ApiServices {
 
       final message = _extractMessage(
         decoded,
-        fallback: 'Unable to activate membership',
+        fallback: response.statusCode == 503
+            ? 'Add member service temporarily unavailable. Please try again shortly.'
+            : 'Unable to add member',
       );
       throw ApiException(
         message,
@@ -374,6 +381,15 @@ class ApiServices {
       if (e is ApiException) rethrow;
       debugPrint("Membership purchase error: $e");
       throw ApiException('Something went wrong, please try again.');
+    }
+  }
+
+  dynamic _decodeResponseBody(String body) {
+    if (body.trim().isEmpty) return <String, dynamic>{};
+    try {
+      return jsonDecode(body);
+    } catch (_) {
+      return body.trim();
     }
   }
 

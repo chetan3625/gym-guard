@@ -1,215 +1,176 @@
+import 'package:azanto/Memberside/View/member_personal_info_page.dart';
+import 'package:azanto/Memberside/View/member_settings_page.dart';
+import 'package:azanto/Memberside/constants/member_figma_layout.dart';
+import 'package:azanto/Services/profile_local_prefs_service.dart';
 import 'package:azanto/core/theme/app_colors.dart';
+import 'package:azanto/views/widgets/azanto_mobile_shell.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:get/get.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-class MemberProfilePage extends StatelessWidget {
+/// Figma: `profile page-1` (447:450) — member profile tab.
+class MemberProfilePage extends StatefulWidget {
   const MemberProfilePage({
     super.key,
     required this.memberName,
     required this.memberInitial,
     required this.onLogout,
+    this.onProfileUpdated,
   });
 
   final String memberName;
   final String memberInitial;
   final Future<void> Function() onLogout;
+  final VoidCallback? onProfileUpdated;
 
-  static const List<_ManagementItem> _items = [
-    _ManagementItem(
-      icon: LucideIcons.clipboardCheck,
-      title: 'Personal Information',
-      subtitle: 'Name, email, photo',
-    ),
-    _ManagementItem(
-      icon: LucideIcons.dumbbell,
-      title: 'Gym Details',
-      subtitle: 'Location, equipment, staff',
-    ),
-    _ManagementItem(
-      icon: LucideIcons.shieldCheck,
-      title: 'Security',
-      subtitle: 'Change Password, Login Activity',
-    ),
-  ];
+  @override
+  State<MemberProfilePage> createState() => _MemberProfilePageState();
+}
+
+class _MemberProfilePageState extends State<MemberProfilePage> {
+  final _profilePrefs = Get.find<ProfileLocalPrefsService>();
+
+  String _email = 'alexadams@gmail.com';
+  String _phone = '+91 9500999999';
+  String _branch = 'Cape Town , New York';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final seed = await _profilePrefs.getProfileSeed();
+    if (!mounted) return;
+    setState(() {
+      _email = seed.email.isNotEmpty ? seed.email : 'alexadams@gmail.com';
+      _phone = seed.phone.isNotEmpty ? seed.phone : '+91 9500999999';
+      _branch = seed.gymName.isNotEmpty ? seed.gymName : 'Cape Town , New York';
+    });
+  }
+
+  Future<void> _openPersonalInfo() async {
+    final saved = await Get.to<bool>(
+      () => MemberPersonalInfoPage(avatarLetter: widget.memberInitial),
+    );
+    if (saved == true) {
+      widget.onProfileUpdated?.call();
+      await _loadProfile();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Color(0xFF3C3C3C),
-            Color(0xFF343434),
-            Color(0xFF2D2D2D),
-          ],
-        ),
+    final layout = MemberFigmaLayout(context);
+    final padding = azantoContentPadding(context);
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(
+        padding.left,
+        layout.s(8),
+        padding.right,
+        layout.s(120),
       ),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(0, 10, 0, 28),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _ProfileHero(
-              memberName: memberName,
-              memberInitial: memberInitial,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _ProfileAvatarSection(
+            layout: layout,
+            memberInitial: widget.memberInitial,
+            onEditTap: _openPersonalInfo,
+          ),
+          SizedBox(height: layout.s(10)),
+          Text(
+            widget.memberName,
+            textAlign: TextAlign.center,
+            style: layout.montserrat(
+              size: 22,
+              weight: FontWeight.w700,
+              color: Colors.white,
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 18, 14, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Management',
-                    style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  ..._items.map(
-                    (item) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: _ManagementCard(item: item),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        await onLogout();
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.brandGreen,
-                        foregroundColor: Colors.black,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      child: Text(
-                        'Logout',
-                        style: GoogleFonts.poppins(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 120),
-                  Center(
-                    child: Text(
-                      'Azanto',
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+          ),
+          SizedBox(height: layout.s(10)),
+          const _MembershipIdBar(membershipId: '19248'),
+          SizedBox(height: layout.s(12)),
+          const _ProfileMetricsRow(),
+          SizedBox(height: layout.s(18)),
+          _SectionLabel(layout: layout, title: 'Personal Details'),
+          SizedBox(height: layout.s(10)),
+          _PersonalDetailsCard(
+            layout: layout,
+            email: _email,
+            phone: _phone,
+            branch: _branch,
+          ),
+          SizedBox(height: layout.s(22)),
+          _SectionLabel(layout: layout, title: 'Preference & Support'),
+          SizedBox(height: layout.s(10)),
+          _PreferenceRow(
+            layout: layout,
+            icon: LucideIcons.calendarDays,
+            label: 'Attendance History',
+            onTap: () => Get.snackbar(
+              'Attendance',
+              'Your attendance history will appear here.',
+              snackPosition: SnackPosition.TOP,
             ),
-          ],
-        ),
+          ),
+          SizedBox(height: layout.s(7)),
+          _PreferenceRow(
+            layout: layout,
+            icon: LucideIcons.bell,
+            label: 'Notification Settings',
+            onTap: () => Get.to<void>(() => const MemberSettingsPage()),
+          ),
+          SizedBox(height: layout.s(7)),
+          _PreferenceRow(
+            layout: layout,
+            icon: LucideIcons.circleHelp,
+            label: 'Help & support',
+            onTap: () => Get.snackbar(
+              'Support',
+              'Contact support@azanto.com for help.',
+              snackPosition: SnackPosition.TOP,
+            ),
+          ),
+          SizedBox(height: layout.s(7)),
+          _LogoutRow(
+            layout: layout,
+            onTap: () async => widget.onLogout(),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _ProfileHero extends StatelessWidget {
-  const _ProfileHero({
-    required this.memberName,
+class _ProfileAvatarSection extends StatelessWidget {
+  const _ProfileAvatarSection({
+    required this.layout,
     required this.memberInitial,
+    required this.onEditTap,
   });
 
-  final String memberName;
+  final MemberFigmaLayout layout;
   final String memberInitial;
+  final VoidCallback onEditTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(14, 10, 14, 26),
-      decoration: const BoxDecoration(
-        color: Color(0xFF427A18),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(58),
-          bottomRight: Radius.circular(58),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0x44000000),
-            blurRadius: 18,
-            offset: Offset(0, 12),
-          ),
-        ],
-      ),
-      child: Column(
+    final avatarSize = layout.s(98);
+    final editSize = layout.s(22);
+
+    return Center(
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          Row(
-            children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.18),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: Colors.white,
-                      size: 11,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Back',
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Spacer(),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  'Subscribed',
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
           Container(
-            height: 92,
-            width: 92,
+            width: avatarSize,
+            height: avatarSize,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: AppColors.brandGreen, width: 4),
+              border: Border.all(color: MemberFigmaColors.accent, width: 3),
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -219,99 +180,32 @@ class _ProfileHero extends StatelessWidget {
             child: Center(
               child: Text(
                 memberInitial,
-                style: GoogleFonts.poppins(
+                style: layout.montserrat(
+                  size: 36,
+                  weight: FontWeight.w700,
                   color: const Color(0xFF2D2D2D),
-                  fontSize: 34,
-                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 12),
-          Text(
-            memberName,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          Text(
-            'Gym Member',
-            style: GoogleFonts.poppins(
-              color: Colors.white70,
-              fontSize: 17,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          Text(
-            'Getfit Studio',
-            style: GoogleFonts.poppins(
-              color: AppColors.brandGreen,
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 14),
-          Container(
-            height: 2,
-            width: double.infinity,
-            color: Colors.white.withValues(alpha: 0.55),
-          ),
-          const SizedBox(height: 16),
-          const Row(
-            children: [
-              Expanded(
-                child: _HeroStat(
-                  value: '24',
-                  unit: '',
-                  label: 'BMI',
+          Positioned(
+            right: layout.s(2),
+            bottom: layout.s(2),
+            child: Material(
+              color: MemberFigmaColors.accent,
+              shape: const CircleBorder(),
+              child: InkWell(
+                onTap: onEditTap,
+                customBorder: const CircleBorder(),
+                child: SizedBox(
+                  width: editSize,
+                  height: editSize,
+                  child: Icon(
+                    LucideIcons.pencil,
+                    size: layout.s(12),
+                    color: MemberFigmaColors.accentDarkText,
+                  ),
                 ),
-              ),
-              _HeroDivider(),
-              Expanded(
-                child: _HeroStat(
-                  value: '75',
-                  unit: 'Kg',
-                  label: 'Weight',
-                ),
-              ),
-              _HeroDivider(),
-              Expanded(
-                child: _HeroStat(
-                  value: '189',
-                  unit: 'cm',
-                  label: 'Height',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF2F2F2),
-              borderRadius: BorderRadius.circular(999),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.white.withValues(alpha: 0.55),
-                  blurRadius: 20,
-                  offset: const Offset(0, 0),
-                ),
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.16),
-                  blurRadius: 18,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Text(
-              'Edit Profile',
-              style: GoogleFonts.poppins(
-                color: Colors.black87,
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
               ),
             ),
           ),
@@ -321,50 +215,86 @@ class _ProfileHero extends StatelessWidget {
   }
 }
 
-class _HeroStat extends StatelessWidget {
-  const _HeroStat({
-    required this.value,
-    required this.unit,
-    required this.label,
-  });
+class _MembershipIdBar extends StatelessWidget {
+  const _MembershipIdBar({required this.membershipId});
 
-  final String value;
-  final String unit;
-  final String label;
+  final String membershipId;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        RichText(
-          text: TextSpan(
-            children: [
-              TextSpan(
-                text: value,
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                ),
+    final layout = MemberFigmaLayout(context);
+
+    return Center(
+      child: Container(
+        width: layout.s(236),
+        height: layout.s(35),
+        padding: layout.padLTRB(12, 0, 12, 0),
+        decoration: BoxDecoration(
+          color: const Color(0xFF353535),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+        ),
+        child: Row(
+          children: [
+            Text(
+              'MEMBERSHIP ID :',
+              style: layout.montserrat(
+                size: 11,
+                weight: FontWeight.w600,
+                color: MemberFigmaColors.label,
+                letterSpacing: 0.4,
               ),
-              if (unit.isNotEmpty)
-                TextSpan(
-                  text: ' $unit',
-                  style: GoogleFonts.poppins(
-                    color: Colors.white70,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-            ],
+            ),
+            const Spacer(),
+            Text(
+              membershipId,
+              style: layout.montserrat(
+                size: 11,
+                weight: FontWeight.w700,
+                color: MemberFigmaColors.accent,
+                letterSpacing: 0.4,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileMetricsRow extends StatelessWidget {
+  const _ProfileMetricsRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final layout = MemberFigmaLayout(context);
+
+    return Row(
+      children: [
+        Expanded(
+          child: _MetricCard(
+            layout: layout,
+            label: 'WEIGHT',
+            value: '75',
+            unit: 'Kg',
           ),
         ),
-        Text(
-          label,
-          style: GoogleFonts.poppins(
-            color: Colors.white54,
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
+        SizedBox(width: layout.s(8)),
+        Expanded(
+          child: _MetricCard(
+            layout: layout,
+            label: 'HEIGHT',
+            value: '189',
+            unit: 'cm',
+          ),
+        ),
+        SizedBox(width: layout.s(8)),
+        Expanded(
+          child: _MetricCard(
+            layout: layout,
+            label: 'BMI',
+            value: '24',
+            subtitle: 'Normal',
           ),
         ),
       ],
@@ -372,77 +302,158 @@ class _HeroStat extends StatelessWidget {
   }
 }
 
-class _HeroDivider extends StatelessWidget {
-  const _HeroDivider();
+class _MetricCard extends StatelessWidget {
+  const _MetricCard({
+    required this.layout,
+    required this.label,
+    required this.value,
+    this.unit,
+    this.subtitle,
+  });
+
+  final MemberFigmaLayout layout;
+  final String label;
+  final String value;
+  final String? unit;
+  final String? subtitle;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 52,
-      width: 1.5,
-      color: AppColors.brandGreen.withValues(alpha: 0.70),
+      height: layout.s(66),
+      padding: layout.padLTRB(8, 10, 8, 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            label,
+            style: layout.montserrat(
+              size: 10,
+              weight: FontWeight.w700,
+              color: MemberFigmaColors.label,
+              letterSpacing: 0.6,
+            ),
+          ),
+          SizedBox(height: layout.s(4)),
+          if (subtitle != null) ...[
+            Text(
+              value,
+              style: layout.montserrat(
+                size: 16,
+                weight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+            Text(
+              subtitle!,
+              style: layout.montserrat(
+                size: 8,
+                weight: FontWeight.w500,
+                color: AppColors.brandGreen,
+              ),
+            ),
+          ] else
+            RichText(
+              textAlign: TextAlign.center,
+              text: TextSpan(
+                children: [
+                  TextSpan(
+                    text: value,
+                    style: layout.montserrat(
+                      size: 16,
+                      weight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                  if (unit != null)
+                    TextSpan(
+                      text: ' $unit',
+                      style: layout.montserrat(
+                        size: 11,
+                        weight: FontWeight.w500,
+                        color: MemberFigmaColors.label,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
 
-class _ManagementCard extends StatelessWidget {
-  const _ManagementCard({required this.item});
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel({required this.layout, required this.title});
 
-  final _ManagementItem item;
+  final MemberFigmaLayout layout;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(left: layout.s(4)),
+      child: Text(
+        title,
+        style: layout.montserrat(
+          size: 11,
+          weight: FontWeight.w700,
+          color: MemberFigmaColors.label,
+          letterSpacing: 0.6,
+        ),
+      ),
+    );
+  }
+}
+
+class _PersonalDetailsCard extends StatelessWidget {
+  const _PersonalDetailsCard({
+    required this.layout,
+    required this.email,
+    required this.phone,
+    required this.branch,
+  });
+
+  final MemberFigmaLayout layout;
+  final String email;
+  final String phone;
+  final String branch;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(12, 14, 12, 14),
       decoration: BoxDecoration(
-        color: const Color(0xFF565656),
+        color: MemberFigmaColors.cardBg,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
+        border: Border.all(color: MemberFigmaColors.cardBorder),
       ),
-      child: Row(
+      child: Column(
         children: [
-          Container(
-            height: 42,
-            width: 42,
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.16),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              item.icon,
-              color: Colors.white,
-              size: 20,
-            ),
+          _PersonalDetailRow(
+            layout: layout,
+            icon: LucideIcons.mail,
+            label: 'Email',
+            value: email,
+            showDivider: true,
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.title,
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                Text(
-                  item.subtitle,
-                  style: GoogleFonts.poppins(
-                    color: Colors.white70,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
+          _PersonalDetailRow(
+            layout: layout,
+            icon: LucideIcons.phone,
+            label: 'Phone',
+            value: phone,
+            showDivider: true,
           ),
-          const Icon(
-            Icons.chevron_right_rounded,
-            color: Colors.white70,
-            size: 28,
+          _PersonalDetailRow(
+            layout: layout,
+            icon: LucideIcons.mapPin,
+            label: 'Branch',
+            value: branch,
+            showDivider: false,
           ),
         ],
       ),
@@ -450,14 +461,201 @@ class _ManagementCard extends StatelessWidget {
   }
 }
 
-class _ManagementItem {
-  const _ManagementItem({
+class _PersonalDetailRow extends StatelessWidget {
+  const _PersonalDetailRow({
+    required this.layout,
     required this.icon,
-    required this.title,
-    required this.subtitle,
+    required this.label,
+    required this.value,
+    required this.showDivider,
   });
 
+  final MemberFigmaLayout layout;
   final IconData icon;
-  final String title;
-  final String subtitle;
+  final String label;
+  final String value;
+  final bool showDivider;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: layout.padLTRB(10, 12, 12, 12),
+      decoration: BoxDecoration(
+        border: showDivider
+            ? Border(
+                bottom: BorderSide(
+                  color: Colors.white.withValues(alpha: 0.08),
+                ),
+              )
+            : null,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _IconBadge(layout: layout, icon: icon),
+          SizedBox(width: layout.s(10)),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: layout.montserrat(
+                    size: 11,
+                    weight: FontWeight.w600,
+                    color: MemberFigmaColors.labelMuted,
+                  ),
+                ),
+                SizedBox(height: layout.s(2)),
+                Text(
+                  value,
+                  style: layout.montserrat(
+                    size: 14,
+                    weight: FontWeight.w600,
+                    color: MemberFigmaColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PreferenceRow extends StatelessWidget {
+  const _PreferenceRow({
+    required this.layout,
+    required this.icon,
+    required this.label,
+    this.onTap,
+  });
+
+  final MemberFigmaLayout layout;
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: MemberFigmaColors.cardBg,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          height: layout.s(64),
+          padding: layout.padLTRB(10, 0, 14, 0),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: MemberFigmaColors.cardBorder),
+          ),
+          child: Row(
+            children: [
+              _IconBadge(layout: layout, icon: icon),
+              SizedBox(width: layout.s(12)),
+              Expanded(
+                child: Text(
+                  label,
+                  style: layout.montserrat(
+                    size: 14,
+                    weight: FontWeight.w600,
+                    color: MemberFigmaColors.textPrimary,
+                  ),
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: MemberFigmaColors.label,
+                size: layout.s(20),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LogoutRow extends StatelessWidget {
+  const _LogoutRow({required this.layout, required this.onTap});
+
+  final MemberFigmaLayout layout;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: MemberFigmaColors.cardBg,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          height: layout.s(64),
+          padding: layout.padLTRB(10, 0, 14, 0),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: MemberFigmaColors.cardBorder),
+          ),
+          child: Row(
+            children: [
+              _IconBadge(
+                layout: layout,
+                icon: LucideIcons.logOut,
+                iconColor: const Color(0xFFFF6B5A),
+              ),
+              SizedBox(width: layout.s(12)),
+              Expanded(
+                child: Text(
+                  'Logout',
+                  style: layout.montserrat(
+                    size: 14,
+                    weight: FontWeight.w600,
+                    color: const Color(0xFFFF6B5A),
+                  ),
+                ),
+              ),
+              Icon(
+                Icons.logout_rounded,
+                color: const Color(0xFFFF6B5A).withValues(alpha: 0.85),
+                size: layout.s(16),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _IconBadge extends StatelessWidget {
+  const _IconBadge({
+    required this.layout,
+    required this.icon,
+    this.iconColor,
+  });
+
+  final MemberFigmaLayout layout;
+  final IconData icon;
+  final Color? iconColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: layout.s(40),
+      height: layout.s(40),
+      decoration: BoxDecoration(
+        color: MemberFigmaColors.cardIconCircle,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Icon(
+        icon,
+        size: layout.s(18),
+        color: iconColor ?? Colors.white,
+      ),
+    );
+  }
 }

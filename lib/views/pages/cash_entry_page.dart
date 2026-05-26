@@ -168,12 +168,12 @@ class _CashEntryPageState extends State<CashEntryPage> {
             child: Container(
               padding: EdgeInsets.all(24 * scale),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.10),
+                color: Colors.white.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(26 * scale),
-                border: Border.all(color: Colors.white.withOpacity(0.14)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.45),
+                    color: Colors.black.withValues(alpha: 0.45),
                     blurRadius: 18 * scale,
                     offset: Offset(0, 12 * scale),
                   ),
@@ -232,12 +232,12 @@ class _CashEntryPageState extends State<CashEntryPage> {
             child: Container(
               padding: EdgeInsets.all(24 * scale),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.10),
+                color: Colors.white.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(26 * scale),
-                border: Border.all(color: Colors.white.withOpacity(0.14)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.45),
+                    color: Colors.black.withValues(alpha: 0.45),
                     blurRadius: 18 * scale,
                     offset: Offset(0, 12 * scale),
                   ),
@@ -314,7 +314,7 @@ class _CashEntryPageState extends State<CashEntryPage> {
         hintText: hint,
         hintStyle: GoogleFonts.montserrat(color: Colors.white70),
         filled: true,
-        fillColor: Colors.black.withOpacity(0.55),
+        fillColor: Colors.black.withValues(alpha: 0.55),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18 * scale),
           borderSide: BorderSide.none,
@@ -339,7 +339,7 @@ class _CashEntryPageState extends State<CashEntryPage> {
         borderRadius: BorderRadius.circular(24 * scale),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.4),
+            color: Colors.black.withValues(alpha: 0.4),
             blurRadius: 18 * scale,
             offset: Offset(0, 8 * scale),
           ),
@@ -453,19 +453,19 @@ class _PaymentChip extends StatelessWidget {
       duration: const Duration(milliseconds: 200),
       decoration: BoxDecoration(
         color: selected
-            ? Colors.white.withOpacity(0.16)
-            : Colors.white.withOpacity(0.06),
+            ? Colors.white.withValues(alpha: 0.16)
+            : Colors.white.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(18 * scale),
         border: Border.all(
           color: selected
-              ? Colors.white.withOpacity(0.35)
-              : Colors.white.withOpacity(0.14),
+              ? Colors.white.withValues(alpha: 0.35)
+              : Colors.white.withValues(alpha: 0.14),
           width: selected ? 1.4 : 1.0,
         ),
         boxShadow: selected
             ? [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.35),
+                  color: Colors.black.withValues(alpha: 0.35),
                   blurRadius: 14 * scale,
                   offset: Offset(0, 8 * scale),
                 ),

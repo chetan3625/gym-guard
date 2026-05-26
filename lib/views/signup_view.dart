@@ -16,8 +16,8 @@ class SignupScreen extends GetView<SignupViewController> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
-    final baseWidth = 390.0;
-    final baseHeight = 844.0;
+    const baseWidth = 390.0;
+    const baseHeight = 844.0;
     final scaleX = size.width / baseWidth;
     final scaleY = size.height / baseHeight;
     final scale = math.min(scaleX, scaleY);
@@ -249,12 +249,12 @@ class _FormContent extends StatelessWidget {
           children: [
             _SocialChip(
               icon: Icons.g_mobiledata,
-              background: Colors.black.withOpacity(0.6),
+              background: Colors.black.withValues(alpha: 0.6),
             ),
             SizedBox(width: 12 * scaleX),
             _SocialChip(
               icon: Icons.facebook_rounded,
-              background: Colors.black.withOpacity(0.6),
+              background: Colors.black.withValues(alpha: 0.6),
             ),
           ],
         ),
@@ -413,7 +413,7 @@ class _SignUpButton extends StatelessWidget {
                 onTap: isLoading ? null : onTap,
                 child: Center(
                   child: isLoading
-                      ? SizedBox(
+                      ? const SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(

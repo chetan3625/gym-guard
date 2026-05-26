@@ -4,12 +4,14 @@ class GlobalVariables {
   static const String authHost = 'https://devapi.azanto.in/auth';
   static const String apiHost = 'https://devapi.azanto.in';
   static const String gymHost = 'https://devapi.azanto.in/gym-branch';
+  static const String profileHost = 'https://devapi.azanto.in/profile';
 
   static const String apiVersion = '/api/v1';
   static const String authBaseUrl = '$authHost$apiVersion';
   static const String apiBaseUrl = '$apiHost$apiVersion';
   static const String gymBaseUrl = '$gymHost$apiVersion';
-  static const String memberProfileBaseUrl = '$apiBaseUrl/profile/member';
+  static const String profileBaseUrl = '$profileHost$apiVersion';
+  static const String memberProfileBaseUrl = '$profileBaseUrl/member';
 }
 
 class AuthApiEndpoints {
@@ -45,16 +47,18 @@ class GymApiEndpoints {
       '${GlobalVariables.gymBaseUrl}/gym/onboardNewGym';
   static const String addBranch =
       '${GlobalVariables.gymBaseUrl}/gym/branch/addbranch';
+  static const String addMember =
+      '${GlobalVariables.gymBaseUrl}/gym/branch/addmember';
   static const String getAllBranches =
       '${GlobalVariables.gymBaseUrl}/gym/get-all-branches';
   static const String getBranchDetails =
       '${GlobalVariables.gymBaseUrl}/gym/branch/getbranchdetails';
+  static const String getAllBranchMembers =
+      '${GlobalVariables.gymBaseUrl}/gym/branch/getallbranchmembers';
 
   /// Returns the gyms owned
-  static const String getGym =
-      '${GlobalVariables.gymBaseUrl}/gym/getGym';
-  static const String getLogo =
-      '${GlobalVariables.gymBaseUrl}/gym/get-logo';
+  static const String getGym = '${GlobalVariables.gymBaseUrl}/gym/getGym';
+  static const String getLogo = '${GlobalVariables.gymBaseUrl}/gym/get-logo';
   static const String updateGym =
       '${GlobalVariables.gymBaseUrl}/gym/updateGymDetails';
   static const String uploadLogo =
@@ -71,7 +75,6 @@ class MemberProfileApiEndpoints {
   static const String uploadAvatar =
       '${GlobalVariables.memberProfileBaseUrl}/upload-avatar';
 
-      
   static const String getAvatar =
       '${GlobalVariables.memberProfileBaseUrl}/getavatar';
 }
@@ -82,6 +85,5 @@ class MembershipApiEndpoints {
   static const String searchMember =
       'https://devapi.azanto.in/profile/api/v1/member/search-member/{by_phone}';
   static String get searchMemberWithPhone => '$searchMember?phone=';
-  static const String membershipPurchase =
-      '${GlobalVariables.apiBaseUrl}/profile/${GlobalVariables.apiVersion}/membership/membership-purchase';
+  static const String membershipPurchase = GymApiEndpoints.addMember;
 }

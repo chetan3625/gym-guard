@@ -16,8 +16,8 @@ class PasswordResetSuccessScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
-    final baseWidth = 390.0;
-    final baseHeight = 844.0;
+    const baseWidth = 390.0;
+    const baseHeight = 844.0;
     final scaleX = size.width / baseWidth;
     final scaleY = size.height / baseHeight;
     final scale = math.min(scaleX, scaleY);
@@ -68,10 +68,10 @@ class PasswordResetSuccessScreen extends StatelessWidget {
                 height: 170 * scale,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFF79DF67).withOpacity(0.16),
+                  color: const Color(0xFF79DF67).withValues(alpha: 0.16),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF79DF67).withOpacity(0.16),
+                      color: const Color(0xFF79DF67).withValues(alpha: 0.16),
                       blurRadius: 100,
                       spreadRadius: 30,
                     ),
@@ -87,10 +87,10 @@ class PasswordResetSuccessScreen extends StatelessWidget {
                 height: 210 * scale,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFFBFF56D).withOpacity(0.08),
+                  color: const Color(0xFFBFF56D).withValues(alpha: 0.08),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFFBFF56D).withOpacity(0.12),
+                      color: const Color(0xFFBFF56D).withValues(alpha: 0.12),
                       blurRadius: 120,
                       spreadRadius: 36,
                     ),
@@ -118,10 +118,10 @@ class PasswordResetSuccessScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: const Color(0xC6131A18),
                       borderRadius: BorderRadius.circular(glassRadius),
-                      border: Border.all(color: Colors.white.withOpacity(0.08)),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.28),
+                          color: Colors.black.withValues(alpha: 0.28),
                           blurRadius: 28,
                           offset: const Offset(0, 16),
                         ),
@@ -154,7 +154,7 @@ class PasswordResetSuccessScreen extends StatelessWidget {
                           'Your password has been reset successfully. You can now sign in with your new password.',
                           textAlign: TextAlign.center,
                           style: GoogleFonts.inter(
-                            color: AppColors.white.withOpacity(0.76),
+                            color: AppColors.white.withValues(alpha: 0.76),
                             fontSize: 13.5 * scale,
                             fontWeight: FontWeight.w400,
                             height: 1.45,
@@ -168,17 +168,17 @@ class PasswordResetSuccessScreen extends StatelessWidget {
                             vertical: 14 * scaleY,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.04),
+                            color: Colors.white.withValues(alpha: 0.04),
                             borderRadius: BorderRadius.circular(20 * scale),
                             border: Border.all(
-                              color: Colors.white.withOpacity(0.05),
+                              color: Colors.white.withValues(alpha: 0.05),
                             ),
                           ),
                           child: Text(
                             'Your account is secure again and everything is ready for your next login.',
                             textAlign: TextAlign.center,
                             style: GoogleFonts.inter(
-                              color: Colors.white.withOpacity(0.72),
+                              color: Colors.white.withValues(alpha: 0.72),
                               fontSize: 12.5 * scale,
                               height: 1.45,
                             ),
@@ -247,7 +247,7 @@ class _ContinueButton extends StatelessWidget {
             onTap: isLoading ? null : onTap,
             child: Center(
               child: isLoading
-                  ? SizedBox(
+                  ? const SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(

@@ -69,7 +69,7 @@ class _PlansPageState extends State<PlansPage> {
                       'Create and manage membership plans for your gym.',
                       style: GoogleFonts.poppins(
                         fontSize: 15.sp,
-                        color: Colors.white.withOpacity(0.68),
+                        color: Colors.white.withValues(alpha: 0.68),
                       ),
                     ),
                   ],
@@ -158,7 +158,7 @@ class _PlansPageState extends State<PlansPage> {
                 builder: (context, setModalState) {
                   return Container(
                     padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 26.h),
-                    color: const Color(0xFF15171D).withOpacity(0.92),
+                    color: const Color(0xFF15171D).withValues(alpha: 0.92),
                     child: SingleChildScrollView(
                       physics: const BouncingScrollPhysics(),
                       child: Column(
@@ -234,7 +234,7 @@ class _PlansPageState extends State<PlansPage> {
                               ),
                               Switch(
                                 value: isActive,
-                                activeColor: Colors.white,
+                                activeThumbColor: Colors.white,
                                 activeTrackColor: Colors.greenAccent,
                                 onChanged: (v) =>
                                     setModalState(() => isActive = v),
@@ -620,14 +620,14 @@ class _PlanField extends StatelessWidget {
             hintText: hint,
             hintStyle: const TextStyle(color: Colors.white70),
             filled: true,
-            fillColor: Colors.white.withOpacity(0.08),
+            fillColor: Colors.white.withValues(alpha: 0.08),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14.r),
-              borderSide: BorderSide(color: Colors.white.withOpacity(0.16)),
+              borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.16)),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14.r),
-              borderSide: BorderSide(color: Colors.white.withOpacity(0.16)),
+              borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.16)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14.r),
@@ -661,10 +661,10 @@ class _EmptyState extends StatelessWidget {
           colors: [Color(0xFF191C24), Color(0xFF11131A)],
         ),
         borderRadius: BorderRadius.circular(26),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.black.withOpacity(0.24),
+            color: AppColors.black.withValues(alpha: 0.24),
             blurRadius: 18,
             offset: const Offset(0, 12),
           ),
@@ -695,7 +695,7 @@ class _EmptyState extends StatelessWidget {
             textAlign: TextAlign.center,
             style: GoogleFonts.poppins(
               fontSize: 14.sp,
-              color: Colors.white.withOpacity(0.68),
+              color: Colors.white.withValues(alpha: 0.68),
               height: 1.45,
             ),
           ),
@@ -742,13 +742,13 @@ class _PlansLoadErrorState extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF1C1E24),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: Column(
         children: [
           Icon(
             Icons.cloud_off_rounded,
-            color: Colors.white.withOpacity(0.82),
+            color: Colors.white.withValues(alpha: 0.82),
             size: 38.sp,
           ),
           SizedBox(height: 12.h),
@@ -767,7 +767,7 @@ class _PlansLoadErrorState extends StatelessWidget {
             textAlign: TextAlign.center,
             style: GoogleFonts.poppins(
               fontSize: 13.sp,
-              color: Colors.white.withOpacity(0.70),
+              color: Colors.white.withValues(alpha: 0.70),
               height: 1.4,
             ),
           ),

@@ -9,7 +9,26 @@ class AppColors {
   static const Color transparentWhite = Color(0x00FFFFFF);
 
   static const Color scaffoldDark = Color(0xFF111216);
-  static const Color brandGreen = Color(0xFF74FF2A);
+  /// Figma style guide accent (#74EE15).
+  static const Color brandGreen = Color(0xFF74EE15);
+
+  /// Mobile app surfaces (Figma: azanto-frontend).
+  static const Color mobileScaffold = Color(0xFF232323);
+  static const Color mobileGradientMid = Color(0xEB5C5C5C);
+  static const Color mobileGradientEnd = Color(0xFF3A3A3A);
+  static const Color navBarSurface = Color(0xFF303030);
+  static const Color headerBarStart = Color(0xFF323232);
+  static const Color headerBarMid = Color(0xFF272727);
+  static const Color headerBarEnd = Color(0xFF232323);
+  static const Color textMuted = Color(0xFF999999);
+  static const Color cardSurface = Color(0xFF353535);
+  static const Color cardSurfaceAlt = Color(0xFF313131);
+  static const Color cardIconCircle = Color(0xFF484848);
+  static const Color accentRed = Color(0xFFFF2323);
+  static const Color payButtonStart = Color(0xFF43890D);
+  static const Color payButtonEnd = Color(0xFF74EE15);
+  static const Color activeBadgeGreen = Color(0xFF84FE56);
+  static const Color streakIconBg = Color(0xFF364232);
 
   static const Color splashGradientTop = Color(0xFF525357);
   static const Color splashGradientMid = Color(0xFF303136);

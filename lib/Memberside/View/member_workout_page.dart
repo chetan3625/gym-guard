@@ -1,7 +1,8 @@
 import 'package:azanto/core/theme/app_colors.dart';
+import 'package:azanto/views/widgets/azanto_mobile_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class MemberWorkoutPage extends StatelessWidget {
   const MemberWorkoutPage({super.key});
@@ -27,26 +28,11 @@ class MemberWorkoutPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = GoogleFonts.poppinsTextTheme(Theme.of(context).textTheme);
 
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Color(0xFF3C3C3C),
-            Color(0xFF343434),
-            Color(0xFF2D2D2D),
-          ],
-        ),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-           
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 24),
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: azantoContentPadding(context),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -85,9 +71,7 @@ class MemberWorkoutPage extends StatelessWidget {
                 ),
               ),
             ),
-          ],
-        ),
-      ),
+      ],
     );
   }
 }

@@ -15,8 +15,8 @@ class ForgotPasswordScreen extends GetView<ForgotPasswordController> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
-    final baseWidth = 390.0;
-    final baseHeight = 844.0;
+    const baseWidth = 390.0;
+    const baseHeight = 844.0;
     final scaleX = size.width / baseWidth;
     final scaleY = size.height / baseHeight;
     final scale = math.min(scaleX, scaleY);
@@ -291,7 +291,7 @@ class _SendButton extends StatelessWidget {
             onTap: isLoading ? null : onTap,
             child: Center(
               child: isLoading
-                  ? SizedBox(
+                  ? const SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(

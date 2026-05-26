@@ -297,8 +297,8 @@ class _GymOnboardingScreenState extends State<GymOnboardingScreen> {
                         Expanded(
                           child: OutlinedButton(
                             style: OutlinedButton.styleFrom(
-                              side: BorderSide(
-                                color: const Color.fromRGBO(
+                              side: const BorderSide(
+                                color: Color.fromRGBO(
                                   255,
                                   255,
                                   255,
@@ -635,13 +635,13 @@ class _Field extends StatelessWidget {
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: const Color.fromRGBO(255, 255, 255, 0.08),
+              borderSide: const BorderSide(
+                color: Color.fromRGBO(255, 255, 255, 0.08),
               ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.brandGreen),
+              borderSide: const BorderSide(color: AppColors.brandGreen),
             ),
           ),
         ),

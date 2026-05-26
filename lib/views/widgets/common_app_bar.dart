@@ -2,12 +2,16 @@ import 'package:azanto/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:get/get.dart';
+import 'package:azanto/Memberside/View/member_notifications_page.dart';
 
 class AzantoAppBar extends StatelessWidget implements PreferredSizeWidget {
   const AzantoAppBar({
     super.key,
     this.showLogout = false,
     this.onLogout,
+    this.onSettingsTap,
+    this.onNotificationsTap,
     this.extraActions,
     this.subscriptionActive,
     this.onStatusTap,
@@ -15,6 +19,8 @@ class AzantoAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   final bool showLogout;
   final VoidCallback? onLogout;
+  final VoidCallback? onSettingsTap;
+  final VoidCallback? onNotificationsTap;
   final List<Widget>? extraActions;
   final bool? subscriptionActive;
   final VoidCallback? onStatusTap;
@@ -64,13 +70,32 @@ class AzantoAppBar extends StatelessWidget implements PreferredSizeWidget {
             ),
           ),
         ...?extraActions,
+        if (onSettingsTap != null)
+          IconButton(
+            onPressed: onSettingsTap,
+            icon: Icon(
+              Icons.settings_outlined,
+              color: Colors.white70,
+              size: 22.sp,
+            ),
+            tooltip: 'Settings',
+          ),
         IconButton(
-          onPressed: () {},
+          onPressed: () {
+            if (onNotificationsTap != null) {
+              onNotificationsTap!();
+            } else {
+              try {
+                Get.to<void>(() => const MemberNotificationsPage());
+              } catch (_) {}
+            }
+          },
           icon: Icon(
             Icons.notifications_none,
             color: Colors.white70,
             size: 22.sp,
           ),
+          tooltip: 'Notifications',
         ),
         if (showLogout)
           IconButton(
@@ -103,10 +128,13 @@ class _StatusTag extends StatelessWidget {
         decoration: BoxDecoration(
           color: Color.fromRGBO(accent.red, accent.green, accent.blue, 0.16),
           borderRadius: BorderRadius.circular(12.r),
-          border: Border.all(color: Color.fromRGBO(accent.red, accent.green, accent.blue, 0.9)),
+          border: Border.all(
+              color:
+                  Color.fromRGBO(accent.red, accent.green, accent.blue, 0.9)),
           boxShadow: [
             BoxShadow(
-              color: Color.fromRGBO(accent.red, accent.green, accent.blue, 0.22),
+              color:
+                  Color.fromRGBO(accent.red, accent.green, accent.blue, 0.22),
               blurRadius: 12.r,
               offset: Offset(0, 6.h),
             ),

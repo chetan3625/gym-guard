@@ -30,7 +30,7 @@ class InvoicesPage extends StatelessWidget {
               'Track collections, pending dues, and recent bill activity.',
               style: GoogleFonts.poppins(
                 fontSize: 16.sp,
-                color: Colors.white.withOpacity(0.66),
+                color: Colors.white.withValues(alpha: 0.66),
               ),
             ),
             SizedBox(height: 18.h),
@@ -90,7 +90,7 @@ class _InvoiceTile extends StatelessWidget {
             width: 42.w,
             height: 42.w,
             decoration: BoxDecoration(
-              color: amountColor.withOpacity(0.12),
+              color: amountColor.withValues(alpha: 0.12),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: amountColor, size: 22.sp),

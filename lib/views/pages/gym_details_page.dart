@@ -138,7 +138,7 @@ class _GymDetailsPageState extends State<GymDetailsPage> {
         'Gym details were saved successfully.',
         snackPosition: SnackPosition.BOTTOM,
       );
-      return updatedGym;
+      return resolvedGym;
     } on ApiException catch (e) {
       await BackendErrorWidgets.handleApiException(e);
       if (!mounted) return null;

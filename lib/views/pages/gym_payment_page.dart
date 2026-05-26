@@ -136,7 +136,7 @@ class _GymPaymentPageState extends State<GymPaymentPage> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   elevation: 6,
-                  shadowColor: accent.withOpacity(0.45),
+                  shadowColor: accent.withValues(alpha: 0.45),
                 ),
                 onPressed: _startPaymentFlow,
                 child: Text(
@@ -167,9 +167,9 @@ class _GymPaymentPageState extends State<GymPaymentPage> {
 
   Widget _buildPlanCard(int index, SubscriptionPlan plan, Color accent) {
     final isSelected = _selectedPlanIndex == index;
-    final cardBorderColor = isSelected ? accent : Colors.white.withOpacity(0.08);
+    final cardBorderColor = isSelected ? accent : Colors.white.withValues(alpha: 0.08);
     final cardBgColor =
-        isSelected ? accent.withOpacity(0.08) : const Color(0xFF1E2026);
+        isSelected ? accent.withValues(alpha: 0.08) : const Color(0xFF1E2026);
 
     return GestureDetector(
       onTap: () {
@@ -187,7 +187,7 @@ class _GymPaymentPageState extends State<GymPaymentPage> {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: accent.withOpacity(0.12),
+                    color: accent.withValues(alpha: 0.12),
                     blurRadius: 20,
                     offset: const Offset(0, 8),
                   )
@@ -213,9 +213,9 @@ class _GymPaymentPageState extends State<GymPaymentPage> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: accent.withOpacity(0.15),
+                      color: accent.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: accent.withOpacity(0.5)),
+                      border: Border.all(color: accent.withValues(alpha: 0.5)),
                     ),
                     child: Text(
                       'Most Popular',
@@ -237,7 +237,7 @@ class _GymPaymentPageState extends State<GymPaymentPage> {
                 Text(
                   plan.price,
                   style: GoogleFonts.poppins(
-                    color: isSelected ? accent : Colors.white.withOpacity(0.9),
+                    color: isSelected ? accent : Colors.white.withValues(alpha: 0.9),
                     fontSize: 26,
                     fontWeight: FontWeight.bold,
                   ),
@@ -268,13 +268,13 @@ class _GymPaymentPageState extends State<GymPaymentPage> {
       child: Row(
         children: [
           Icon(Icons.check_circle_outline_rounded,
-              color: accent.withOpacity(0.8), size: 18),
+              color: accent.withValues(alpha: 0.8), size: 18),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               feature,
               style: GoogleFonts.inter(
-                color: Colors.white.withOpacity(0.85),
+                color: Colors.white.withValues(alpha: 0.85),
                 fontSize: 13.5,
               ),
             ),
@@ -289,7 +289,7 @@ class _GymPaymentPageState extends State<GymPaymentPage> {
       'Payment',
       'Redirecting to the payment gateway...',
       snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.black.withOpacity(0.85),
+      backgroundColor: Colors.black.withValues(alpha: 0.85),
       colorText: Colors.white,
       margin: const EdgeInsets.all(16),
       duration: const Duration(seconds: 3),
@@ -320,10 +320,10 @@ class _StatusCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF181A20),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: accent.withOpacity(0.7)),
+        border: Border.all(color: accent.withValues(alpha: 0.7)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.35),
+            color: Colors.black.withValues(alpha: 0.35),
             blurRadius: 16,
             offset: const Offset(0, 10),
           ),
@@ -334,9 +334,9 @@ class _StatusCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: accent.withOpacity(0.14),
+              color: accent.withValues(alpha: 0.14),
               shape: BoxShape.circle,
-              border: Border.all(color: accent.withOpacity(0.8)),
+              border: Border.all(color: accent.withValues(alpha: 0.8)),
             ),
             child: Icon(
               statusLabel == 'Active'
@@ -377,7 +377,7 @@ class _StatusCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: accent.withOpacity(0.15),
+              color: accent.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: accent),
             ),

@@ -1,7 +1,10 @@
+import 'package:azanto/Memberside/View/member_update_measurement_page.dart';
 import 'package:azanto/core/theme/app_colors.dart';
+import 'package:azanto/views/widgets/azanto_mobile_shell.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class MemberProgressPage extends StatelessWidget {
   const MemberProgressPage({super.key});
@@ -24,88 +27,79 @@ class MemberProgressPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Color(0xFF3C3C3C),
-            Color(0xFF343434),
-            Color(0xFF2D2D2D),
-          ],
-        ),
-      ),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(10, 18, 10, 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const _ProgressTitleSection(),
-            const SizedBox(height: 12),
-            const Row(
-              children: [
-                Expanded(
-                    child: _StatCard(label: 'Weight', value: '70', unit: 'kg')),
-                SizedBox(width: 10),
-                Expanded(
-                    child:
-                        _StatCard(label: 'Body Fat', value: '12', unit: '%')),
-              ],
+    return SingleChildScrollView(
+      padding: azantoContentPadding(context),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _ProgressTitleSection(
+            onUpgradeTap: () =>
+                Get.to<void>(() => const MemberUpdateMeasurementPage()),
+          ),
+          const SizedBox(height: 12),
+          const Row(
+            children: [
+              Expanded(
+                  child: _StatCard(label: 'Weight', value: '70', unit: 'kg')),
+              SizedBox(width: 10),
+              Expanded(
+                  child: _StatCard(label: 'Body Fat', value: '12', unit: '%')),
+            ],
+          ),
+          const SizedBox(height: 10),
+          const _BmiStatusCard(),
+          const SizedBox(height: 10),
+          const _WeightAnalysisCard(),
+          const SizedBox(height: 16),
+          Text(
+            'Milestones',
+            style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
             ),
-            const SizedBox(height: 10),
-            const _BmiStatusCard(),
-            const SizedBox(height: 10),
-            const _WeightAnalysisCard(),
-            const SizedBox(height: 16),
-            Text(
-              'Milestones',
-              style: GoogleFonts.poppins(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: _milestones
-                  .map(
-                    (milestone) => Expanded(
-                      child: Padding(
-                        padding: EdgeInsets.only(
-                          right: milestone == _milestones.last ? 0 : 10,
-                        ),
-                        child: _MilestoneCard(data: milestone),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: _milestones
+                .map(
+                  (milestone) => Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        right: milestone == _milestones.last ? 0 : 10,
                       ),
+                      child: _MilestoneCard(data: milestone),
                     ),
-                  )
-                  .toList(),
-            ),
-            const SizedBox(height: 10),
-            const _MetricSummaryCard(
-              title: 'MUSCLE MASS',
-              subtitle: 'SINCE DEC 20TH',
-              leadingIcon: LucideIcons.zap,
-              accentColor: AppColors.brandGreen,
-              valueText: '+2kg',
-            ),
-            const SizedBox(height: 10),
-            const _MetricSummaryCard(
-              title: 'WATER RETENTION',
-              subtitle: 'CURRENT LEVELS',
-              leadingIcon: LucideIcons.droplets,
-              accentColor: Color(0xFFFF8A1F),
-              valueText: '-1.5%',
-            ),
-          ],
-        ),
+                  ),
+                )
+                .toList(),
+          ),
+          const SizedBox(height: 10),
+          const _MetricSummaryCard(
+            title: 'MUSCLE MASS',
+            subtitle: 'SINCE DEC 20TH',
+            leadingIcon: LucideIcons.zap,
+            accentColor: AppColors.brandGreen,
+            valueText: '+2kg',
+          ),
+          const SizedBox(height: 10),
+          const _MetricSummaryCard(
+            title: 'WATER RETENTION',
+            subtitle: 'CURRENT LEVELS',
+            leadingIcon: LucideIcons.droplets,
+            accentColor: Color(0xFFFF8A1F),
+            valueText: '-1.5%',
+          ),
+        ],
       ),
     );
   }
 }
 
 class _ProgressTitleSection extends StatelessWidget {
-  const _ProgressTitleSection();
+  const _ProgressTitleSection({required this.onUpgradeTap});
+
+  final VoidCallback onUpgradeTap;
 
   @override
   Widget build(BuildContext context) {
@@ -138,27 +132,34 @@ class _ProgressTitleSection extends StatelessWidget {
             ],
           ),
         ),
-        Container(
-          height: 30,
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          decoration: BoxDecoration(
-            color: AppColors.brandGreen,
+        Material(
+          color: AppColors.brandGreen,
+          borderRadius: BorderRadius.circular(6),
+          child: InkWell(
+            onTap: onUpgradeTap,
             borderRadius: BorderRadius.circular(6),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.brandGreen.withValues(alpha: 0.16),
-                blurRadius: 12,
-                offset: const Offset(0, 7),
+            child: Container(
+              height: 30,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(6),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.brandGreen.withValues(alpha: 0.16),
+                    blurRadius: 12,
+                    offset: const Offset(0, 7),
+                  ),
+                ],
               ),
-            ],
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            'Upgrade',
-            style: GoogleFonts.poppins(
-              color: Colors.white,
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
+              child: Text(
+                'Upgrade',
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
           ),
         ),

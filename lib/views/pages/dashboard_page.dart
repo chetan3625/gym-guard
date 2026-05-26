@@ -1,10 +1,14 @@
-import 'package:azanto/core/theme/app_colors.dart';
 import 'package:azanto/controllers/home_controller.dart' show GymSummaryData;
+import 'package:azanto/core/config/api_constant.dart';
 import 'package:azanto/core/responsive/responsive.dart';
+import 'package:azanto/core/theme/app_colors.dart';
+import 'package:azanto/views/widgets/azanto_mobile_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+/// Gym owner dashboard — Figma `dashboard demo` (228:89).
 class DashboardPage extends StatelessWidget {
   const DashboardPage({
     super.key,
@@ -18,7 +22,6 @@ class DashboardPage extends StatelessWidget {
     this.onGymTap,
     this.showAddGym = false,
     this.gymSummary,
-    this.statusBanner,
   });
 
   final String greeting;
@@ -31,68 +34,83 @@ class DashboardPage extends StatelessWidget {
   final VoidCallback? onGymTap;
   final bool showAddGym;
   final GymSummaryData? gymSummary;
-  final Widget? statusBanner;
 
   @override
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.viewPaddingOf(context).bottom;
+    final pad = azantoContentPadding(context);
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
-      padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 118.h + bottomPadding),
+      padding: EdgeInsets.fromLTRB(
+        pad.left,
+        6,
+        pad.right,
+        20 + bottomPadding,
+      ),
       child: MaxWidthContainer(
+        padding: EdgeInsets.zero,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (statusBanner != null) ...[
-              statusBanner!,
-              SizedBox(height: 12.h),
-            ],
-            _GreetingCard(
+            _OwnerGreetingCard(
               greeting: greeting,
               userName: userName,
               userRole: userRole,
               avatarLetter: avatarLetter,
               onTap: onProfileTap,
             ),
-            SizedBox(height: 18.h),
+            SizedBox(height: 14.h),
             Text(
-              'Recent Activity',
-              style: GoogleFonts.inter(
-                fontSize: 15.sp,
-                fontWeight: FontWeight.w600,
+              'Key Metrics',
+              style: GoogleFonts.poppins(
+                fontSize: 16.sp,
+                fontWeight: FontWeight.w500,
+                height: 19 / 16,
                 color: Colors.white,
               ),
             ),
+            SizedBox(height: 12.h),
+            const _KeyMetricsSection(),
             SizedBox(height: 10.h),
+            _AddMemberCard(onTap: onAddMemberTap),
+            if (gymSummary != null) ...[
+              SizedBox(height: 12.h),
+              _GymSummaryCard(data: gymSummary!, onTap: onGymTap),
+            ] else if (showAddGym) ...[
+              SizedBox(height: 12.h),
+              _AddGymCard(onTap: onAddGymTap),
+            ],
+            SizedBox(height: 22.h),
+            Text(
+              'Recent Activity',
+              style: GoogleFonts.poppins(
+                fontSize: 16.sp,
+                fontWeight: FontWeight.w500,
+                height: 19 / 16,
+                color: Colors.white,
+              ),
+            ),
+            SizedBox(height: 12.h),
             const _ActivityCard(
-              borderColor: AppColors.brandGreen,
+              height: 60,
+              borderColor: Color(0xFF4DB001),
               iconColor: AppColors.brandGreen,
-              icon: Icons.currency_rupee_rounded,
+              icon: LucideIcons.indianRupee,
               title: 'Payment Collected',
               subtitle: 'Riya Sharma - ₹3000',
               timeText: '2 Hours ago',
             ),
             SizedBox(height: 10.h),
             const _ActivityCard(
-              borderColor: Color(0xFFFF3434),
-              iconColor: Color(0xFFFF3434),
-              icon: Icons.timer_outlined,
+              height: 70,
+              borderColor: Color(0xFFFA2323),
+              iconColor: AppColors.accentRed,
+              icon: LucideIcons.timer,
               title: 'Member Checked In',
               subtitle: 'Amrita Singh',
               timeText: '2 Hours ago',
             ),
-            SizedBox(height: 18.h),
-            const _KeyMetricsCard(),
-            SizedBox(height: 16.h),
-            if (gymSummary != null) ...[
-              _GymSummaryCard(data: gymSummary!, onTap: onGymTap),
-              SizedBox(height: 12.h),
-            ] else if (showAddGym) ...[
-              _AddGymCard(onTap: onAddGymTap),
-              SizedBox(height: 12.h),
-            ],
-            _AddMemberCard(onTap: onAddMemberTap),
           ],
         ),
       ),
@@ -100,8 +118,9 @@ class DashboardPage extends StatelessWidget {
   }
 }
 
-class _GreetingCard extends StatelessWidget {
-  const _GreetingCard({
+/// Figma `good morning txt` — 75px avatar, name, role, forward chevron.
+class _OwnerGreetingCard extends StatelessWidget {
+  const _OwnerGreetingCard({
     required this.greeting,
     required this.userName,
     required this.userRole,
@@ -117,76 +136,292 @@ class _GreetingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
-        decoration: _cardDecoration(),
-        child: Row(
-          children: [
-            Container(
-              width: 48.w,
-              height: 48.w,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: const Color(0xFF1C1E23),
-                border: Border.all(
-                  color: AppColors.brandGreen.withOpacity(0.35),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12.r),
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 4.h),
+          child: Row(
+            children: [
+              Container(
+                width: 75.w,
+                height: 75.w,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.cardSurfaceAlt,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  avatarLetter,
+                  style: GoogleFonts.poppins(
+                    fontSize: 27.sp,
+                    fontWeight: FontWeight.w600,
+                    height: 1,
+                    color: AppColors.brandGreen,
+                  ),
                 ),
               ),
-              alignment: Alignment.center,
-              child: Text(
-                avatarLetter,
-                style: GoogleFonts.montserrat(
-                  fontSize: 20.sp,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.brandGreen,
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '$greeting , $userName',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.poppins(
+                        fontSize: 20.sp,
+                        fontWeight: FontWeight.w600,
+                        height: 24 / 20,
+                        color: Colors.white,
+                      ),
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      userRole,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.poppins(
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.w400,
+                        height: 18 / 15,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-            SizedBox(width: 12.w),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '$greeting, $userName',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.montserrat(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                  SizedBox(height: 2.h),
-                  Text(
-                    userRole,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.montserrat(
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.w400,
-                      color: Colors.white.withOpacity(0.62),
-                    ),
-                  ),
-                ],
+              Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.textMuted,
+                size: 20.sp,
               ),
-            ),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: Color(0xFF8E9097),
-              size: 32.sp,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
+class _KeyMetricsSection extends StatelessWidget {
+  const _KeyMetricsSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        const _OwnerMetricCard(
+          title: 'Total Members',
+          value: '200',
+          icon: LucideIcons.users,
+          valueColor: AppColors.brandGreen,
+          showChevron: true,
+          fullWidth: true,
+        ),
+        SizedBox(height: 10.h),
+        const _OwnerMetricCard(
+          title: 'Active Members',
+          value: '154',
+          icon: LucideIcons.userCheck,
+          valueColor: AppColors.brandGreen,
+          fullWidth: true,
+        ),
+        SizedBox(height: 10.h),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final gap = 10.w;
+            final cardWidth = (constraints.maxWidth - gap) / 2;
+            return Row(
+              children: [
+                SizedBox(
+                  width: cardWidth,
+                  child: const _OwnerMetricCard(
+                    title: 'Today Check-in',
+                    value: '45',
+                    icon: LucideIcons.circleCheck,
+                    valueColor: AppColors.brandGreen,
+                    compact: true,
+                  ),
+                ),
+                SizedBox(width: gap),
+                SizedBox(
+                  width: cardWidth,
+                  child: const _OwnerMetricCard(
+                    title: 'Expiring Soon',
+                    value: '12',
+                    icon: LucideIcons.timer,
+                    valueColor: AppColors.accentRed,
+                    compact: true,
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+/// Figma metric rows — 70px height, gradient fill, bordered.
+class _OwnerMetricCard extends StatelessWidget {
+  const _OwnerMetricCard({
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.valueColor,
+    this.showChevron = false,
+    this.compact = false,
+    this.fullWidth = false,
+  });
+
+  final String title;
+  final String value;
+  final IconData icon;
+  final Color valueColor;
+  final bool showChevron;
+  final bool compact;
+  final bool fullWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    final borderColor =
+        compact ? const Color(0xFF333333) : const Color(0xFF999999);
+
+    return Container(
+      height: 70.h,
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
+      decoration: azantoMetricCardDecoration(
+        borderColor: borderColor,
+        highlight: compact,
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: compact ? 36.w : 40.w,
+            height: compact ? 36.w : 40.w,
+            child: Icon(
+              icon,
+              color: AppColors.brandGreen,
+              size: compact ? 26.sp : 28.sp,
+            ),
+          ),
+          SizedBox(width: 10.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  height: 17.h,
+                  child: FittedBox(
+                    alignment: Alignment.centerLeft,
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.poppins(
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w400,
+                        height: 16 / 13,
+                        color: compact && valueColor == AppColors.accentRed
+                            ? Colors.white.withValues(alpha: 0.64)
+                            : Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 2.h),
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.w700,
+                    height: 24 / 20,
+                    color: valueColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (showChevron)
+            Icon(
+              Icons.chevron_right_rounded,
+              color: AppColors.textMuted,
+              size: 22.sp,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Figma `Add Member` — 147px card, plus icon, label.
+class _AddMemberCard extends StatelessWidget {
+  const _AddMemberCard({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(7.r),
+        child: Container(
+          width: double.infinity,
+          height: 147.h,
+          decoration: BoxDecoration(
+            color: const Color(0xFF3A3A3A),
+            borderRadius: BorderRadius.circular(7.r),
+            border: Border.all(color: const Color(0xFF2F2F2F)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.25),
+                blurRadius: 6.r,
+                offset: Offset(0, 6.h),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.add_rounded,
+                color: AppColors.brandGreen,
+                size: 36.sp,
+              ),
+              SizedBox(height: 10.h),
+              Text(
+                'Add Member',
+                style: GoogleFonts.poppins(
+                  fontSize: 30.sp,
+                  fontWeight: FontWeight.w600,
+                  height: 40 / 30,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Figma activity `Updates` rows — colored border, icon disc, Inter labels.
 class _ActivityCard extends StatelessWidget {
   const _ActivityCard({
+    required this.height,
     required this.borderColor,
     required this.iconColor,
     required this.icon,
@@ -195,6 +430,7 @@ class _ActivityCard extends StatelessWidget {
     required this.timeText,
   });
 
+  final double height;
   final Color borderColor;
   final Color iconColor;
   final IconData icon;
@@ -205,8 +441,20 @@ class _ActivityCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      height: height.h,
       padding: EdgeInsets.all(12.w),
-      decoration: _cardDecoration(borderColor: borderColor),
+      decoration: BoxDecoration(
+        color: AppColors.cardSurfaceAlt,
+        borderRadius: BorderRadius.circular(7.r),
+        border: Border.all(color: borderColor, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 7.r,
+            offset: Offset(1.w, 4.h),
+          ),
+        ],
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -215,8 +463,9 @@ class _ActivityCard extends StatelessWidget {
             height: 40.w,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: iconColor.withOpacity(0.12),
+              color: iconColor.withValues(alpha: 0.12),
             ),
+            alignment: Alignment.center,
             child: Icon(icon, color: iconColor, size: 24.sp),
           ),
           SizedBox(width: 10.w),
@@ -225,6 +474,7 @@ class _ActivityCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
                       child: Text(
@@ -243,6 +493,7 @@ class _ActivityCard extends StatelessWidget {
                       style: GoogleFonts.inter(
                         fontSize: 12.sp,
                         fontWeight: FontWeight.w400,
+                        height: 1.07,
                         color: const Color(0xFFB8BAC2),
                       ),
                     ),
@@ -254,181 +505,13 @@ class _ActivityCard extends StatelessWidget {
                   style: GoogleFonts.inter(
                     fontSize: 12.sp,
                     fontWeight: FontWeight.w400,
-                    color: Colors.white.withOpacity(0.56),
+                    color: Colors.white.withValues(alpha: 0.56),
                   ),
                 ),
               ],
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _KeyMetricsCard extends StatelessWidget {
-  const _KeyMetricsCard();
-
-  @override
-  Widget build(BuildContext context) {
-    final width = MediaQuery.sizeOf(context).width;
-    final crossAxisCount = width >= 900
-        ? 3
-        : width >= 520
-            ? 2
-            : 1;
-    final childAspectRatio = crossAxisCount == 3
-        ? 2.2
-        : crossAxisCount == 2
-            ? 1.8
-            : 3.0;
-
-    return Container(
-      padding: EdgeInsets.fromLTRB(12.w, 12.h, 12.w, 12.h),
-      decoration: _cardDecoration(borderColor: Colors.white.withOpacity(0.2)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Key Metrics',
-            style: GoogleFonts.inter(
-              fontSize: 14.sp,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            ),
-          ),
-          SizedBox(height: 10.h),
-          GridView.count(
-            shrinkWrap: true,
-            crossAxisCount: crossAxisCount,
-            mainAxisSpacing: 10.h,
-            crossAxisSpacing: 10.w,
-            childAspectRatio: childAspectRatio,
-            physics: const NeverScrollableScrollPhysics(),
-            children: const [
-              _MetricTile(
-                title: 'Active Members',
-                value: '154',
-                icon: Icons.groups_2_rounded,
-                valueColor: AppColors.brandGreen,
-              ),
-              _MetricTile(
-                title: 'Total Members',
-                value: '200',
-                icon: Icons.group_rounded,
-                valueColor: AppColors.brandGreen,
-              ),
-              _MetricTile(
-                title: 'Expiring Soon',
-                value: '12',
-                icon: Icons.timer_outlined,
-                valueColor: Color(0xFFFF3434),
-              ),
-              _MetricTile(
-                title: 'Today Check-in',
-                value: '45',
-                icon: Icons.check_circle_rounded,
-                valueColor: AppColors.brandGreen,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MetricTile extends StatelessWidget {
-  const _MetricTile({
-    required this.title,
-    required this.value,
-    required this.icon,
-    required this.valueColor,
-  });
-
-  final String title;
-  final String value;
-  final IconData icon;
-  final Color valueColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.fromLTRB(10.w, 8.h, 10.w, 8.h),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2E3035),
-        borderRadius: BorderRadius.circular(12.r),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: AppColors.brandGreen, size: 20.sp),
-              SizedBox(width: 6.w),
-              Expanded(
-                child: Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.montserrat(
-                    fontSize: 13.sp,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFFD0D2D7),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 6.h),
-          Text(
-            value,
-            style: GoogleFonts.poppins(
-              fontSize: 24.sp,
-              fontWeight: FontWeight.w700,
-              color: valueColor,
-              height: 1,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AddMemberCard extends StatelessWidget {
-  const _AddMemberCard({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: EdgeInsets.symmetric(vertical: 30.h),
-        decoration: _cardDecoration(),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.add_rounded,
-              color: AppColors.brandGreen,
-              size: 52.sp,
-            ),
-            SizedBox(height: 8.h),
-            Text(
-              'Add Member',
-              style: GoogleFonts.montserrat(
-                fontSize: 30.sp,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -446,8 +529,8 @@ class _AddGymCard extends StatelessWidget {
       child: Container(
         width: double.infinity,
         padding: EdgeInsets.symmetric(vertical: 26.h, horizontal: 14.w),
-        decoration: _cardDecoration(
-          borderColor: AppColors.brandGreen.withOpacity(0.45),
+        decoration: _ownerPanelDecoration(
+          borderColor: AppColors.brandGreen.withValues(alpha: 0.45),
         ),
         child: Row(
           children: [
@@ -456,18 +539,18 @@ class _AddGymCard extends StatelessWidget {
               height: 56.w,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.brandGreen.withOpacity(0.15),
+                color: AppColors.brandGreen.withValues(alpha: 0.15),
                 border: Border.all(
-                  color: AppColors.brandGreen.withOpacity(0.6),
+                  color: AppColors.brandGreen.withValues(alpha: 0.6),
                 ),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.fitness_center_rounded,
                 color: AppColors.brandGreen,
-                size: 30,
+                size: 30.sp,
               ),
             ),
-            const SizedBox(width: 14),
+            SizedBox(width: 14.w),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -485,7 +568,7 @@ class _AddGymCard extends StatelessWidget {
                     'Register the gym you manage to start tracking members.',
                     style: GoogleFonts.inter(
                       fontSize: 13.sp,
-                      color: Colors.white.withOpacity(0.72),
+                      color: Colors.white.withValues(alpha: 0.72),
                     ),
                   ),
                 ],
@@ -493,7 +576,7 @@ class _AddGymCard extends StatelessWidget {
             ),
             Icon(
               Icons.chevron_right_rounded,
-              color: Color(0xFF9CA0AA),
+              color: const Color(0xFF9CA0AA),
               size: 30.sp,
             ),
           ],
@@ -519,8 +602,8 @@ class _GymSummaryCard extends StatelessWidget {
       child: Container(
         width: double.infinity,
         padding: EdgeInsets.all(16.w),
-        decoration: _cardDecoration(
-          borderColor: AppColors.brandGreen.withOpacity(0.5),
+        decoration: _ownerPanelDecoration(
+          borderColor: AppColors.brandGreen.withValues(alpha: 0.5),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -530,15 +613,33 @@ class _GymSummaryCard extends StatelessWidget {
               height: 54.w,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.brandGreen.withOpacity(0.15),
-                border:
-                    Border.all(color: AppColors.brandGreen.withOpacity(0.7)),
+                color: AppColors.brandGreen.withValues(alpha: 0.15),
+                border: Border.all(
+                  color: AppColors.brandGreen.withValues(alpha: 0.7),
+                ),
               ),
-              child: Icon(
-                Icons.home_work_rounded,
-                color: AppColors.brandGreen,
-                size: 28.sp,
-              ),
+              child: data.logoUrl != null && data.logoUrl!.isNotEmpty
+                  ? ClipOval(
+                      child: Image.network(
+                        data.logoUrl!.startsWith('http://') ||
+                                data.logoUrl!.startsWith('https://')
+                            ? data.logoUrl!
+                            : '${GlobalVariables.apiHost}${data.logoUrl!.startsWith('/') ? '' : '/'}${data.logoUrl!}',
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Icon(
+                            Icons.home_work_rounded,
+                            color: AppColors.brandGreen,
+                            size: 28.sp,
+                          );
+                        },
+                      ),
+                    )
+                  : Icon(
+                      Icons.home_work_rounded,
+                      color: AppColors.brandGreen,
+                      size: 28.sp,
+                    ),
             ),
             SizedBox(width: 14.w),
             Expanded(
@@ -562,7 +663,7 @@ class _GymSummaryCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
                       fontSize: 13.sp,
-                      color: Colors.white.withOpacity(0.82),
+                      color: Colors.white.withValues(alpha: 0.82),
                     ),
                   ),
                   if (data.description?.isNotEmpty ?? false) ...[
@@ -573,7 +674,7 @@ class _GymSummaryCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
                         fontSize: 12.sp,
-                        color: Colors.white.withOpacity(0.64),
+                        color: Colors.white.withValues(alpha: 0.64),
                       ),
                     ),
                   ],
@@ -602,14 +703,14 @@ class _GymSummaryCard extends StatelessWidget {
   }
 }
 
-BoxDecoration _cardDecoration({Color borderColor = const Color(0xFF3A3C42)}) {
+BoxDecoration _ownerPanelDecoration({required Color borderColor}) {
   return BoxDecoration(
     color: const Color(0xFF2B2D32),
     borderRadius: BorderRadius.circular(14.r),
     border: Border.all(color: borderColor),
     boxShadow: [
       BoxShadow(
-        color: Colors.black.withOpacity(0.35),
+        color: Colors.black.withValues(alpha: 0.35),
         blurRadius: 18.r,
         offset: Offset(0, 10.h),
       ),

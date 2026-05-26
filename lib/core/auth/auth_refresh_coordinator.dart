@@ -88,7 +88,7 @@ class AuthRefreshCoordinator {
 
       final elapsed = DateTime.now().millisecondsSinceEpoch - startTime;
       if (elapsed > timeoutMs) {
-        throw TimeoutException(
+        throw const TimeoutException(
             'Timed out waiting for token refresh to complete');
       }
 

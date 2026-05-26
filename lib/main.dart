@@ -14,6 +14,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:azanto/Services/member_service.dart';
 import 'package:azanto/Services/plan_service.dart';
 
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await GetStorage.init();

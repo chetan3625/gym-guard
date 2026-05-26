@@ -131,8 +131,8 @@ class _SelectPlanPageState extends State<SelectPlanPage> {
                                   fontWeight: FontWeight.w700,
                                   foreground: Paint()
                                     ..shader =
-                                        LinearGradient(
-                                          colors: const [
+                                        const LinearGradient(
+                                          colors: [
                                             Color(0xFF93E0C2),
                                             Color(0xFFDFF455),
                                           ],

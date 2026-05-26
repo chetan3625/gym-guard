@@ -14,8 +14,8 @@ class AuthEntryScreen extends GetView<AuthEntryController> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
-    final baseWidth = 393.0;
-    final baseHeight = 852.0;
+    const baseWidth = 393.0;
+    const baseHeight = 852.0;
     final scaleX = size.width / baseWidth;
     final scaleY = size.height / baseHeight;
     final scale = math.min(scaleX, scaleY);

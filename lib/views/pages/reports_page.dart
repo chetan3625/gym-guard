@@ -30,7 +30,7 @@ class ReportsPage extends StatelessWidget {
               'Get business insights from attendance and revenue trends.',
               style: GoogleFonts.poppins(
                 fontSize: 16.sp,
-                color: Colors.white.withOpacity(0.66),
+                color: Colors.white.withValues(alpha: 0.66),
               ),
             ),
             SizedBox(height: 18.h),
@@ -94,7 +94,7 @@ class _ReportMetric extends StatelessWidget {
                   title,
                   style: GoogleFonts.poppins(
                     fontSize: 15.sp,
-                    color: Colors.white.withOpacity(0.72),
+                    color: Colors.white.withValues(alpha: 0.72),
                   ),
                 ),
                 SizedBox(height: 4.h),
@@ -112,7 +112,7 @@ class _ReportMetric extends StatelessWidget {
           Container(
             padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
             decoration: BoxDecoration(
-              color: trendColor.withOpacity(0.12),
+              color: trendColor.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10.r),
             ),
             child: Text(
