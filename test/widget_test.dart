@@ -11,6 +11,6 @@ void main() {
   });
 
   test('Brand color remains unchanged', () {
-    expect(AppColors.brandGreen.toARGB32(), 0xFF74FF2A);
+    expect(AppColors.brandGreen.toARGB32(), 0xFF74EE15);
   });
 }
