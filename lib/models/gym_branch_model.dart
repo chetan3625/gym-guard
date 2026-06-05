@@ -16,6 +16,7 @@ class GymBranchModel {
     required this.accessCode,
     required this.qrCode,
     required this.createdAt,
+    this.totalMembers,
   });
 
   final String branchId;
@@ -34,6 +35,7 @@ class GymBranchModel {
   final String? accessCode;
   final String? qrCode;
   final DateTime? createdAt;
+  final int? totalMembers;
 
   String get fullAddress {
     final parts = <String>[
@@ -64,6 +66,16 @@ class GymBranchModel {
       accessCode: _normalizeText(json['access_code']),
       qrCode: _normalizeText(json['qr_code']),
       createdAt: _parseDateTime(json['created_at']),
+      totalMembers: _toInt(
+        json['total_members'] ??
+            json['totalMembers'] ??
+            json['member_count'] ??
+            json['memberCount'] ??
+            json['members_count'] ??
+            json['membersCount'] ??
+            json['total_members_count'] ??
+            json['totalMembersCount'],
+      ),
     );
   }
 
@@ -88,5 +100,12 @@ class GymBranchModel {
     if (value is num) return value != 0;
     final normalized = value?.toString().trim().toLowerCase() ?? '';
     return normalized == 'true' || normalized == '1' || normalized == 'yes';
+  }
+
+  static int? _toInt(dynamic value) {
+    if (value is num) return value.toInt();
+    final raw = value?.toString().trim() ?? '';
+    if (raw.isEmpty) return null;
+    return int.tryParse(raw);
   }
 }

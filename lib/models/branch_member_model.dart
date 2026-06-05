@@ -104,7 +104,15 @@ class BranchMemberModel {
         .trim();
     final fallbackName = _readText(
       json,
-      const ['name', 'full_name', 'fullName', 'display_name', 'displayName'],
+      const [
+        'name',
+        'full_name',
+        'fullName',
+        'display_name',
+        'displayName',
+        'member_name',
+        'memberName',
+      ],
       nested: user,
     );
 

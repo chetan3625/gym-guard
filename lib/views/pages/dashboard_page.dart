@@ -1,4 +1,5 @@
-import 'package:azanto/controllers/home_controller.dart' show GymSummaryData;
+import 'package:azanto/controllers/home_controller.dart';
+import 'package:get/get.dart';
 import 'package:azanto/core/config/api_constant.dart';
 import 'package:azanto/core/responsive/responsive.dart';
 import 'package:azanto/core/theme/app_colors.dart';
@@ -212,11 +213,13 @@ class _KeyMetricsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    final controller = Get.find<HomeController>();
+
+    return Obx(() => Column(
       children: [
-        const _OwnerMetricCard(
+        _OwnerMetricCard(
           title: 'Total Members',
-          value: '200',
+          value: '${controller.totalMembersCount.value}',
           icon: LucideIcons.users,
           valueColor: AppColors.brandGreen,
           showChevron: true,
@@ -263,7 +266,7 @@ class _KeyMetricsSection extends StatelessWidget {
           },
         ),
       ],
-    );
+    ));
   }
 }
 

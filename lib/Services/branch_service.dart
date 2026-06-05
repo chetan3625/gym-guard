@@ -11,8 +11,8 @@ import 'package:http/http.dart' as http;
 
 class BranchService {
   BranchService({SessionService? sessionService, http.Client? client})
-    : _sessionService = sessionService ?? SessionService(),
-      _client = client ?? http.Client();
+      : _sessionService = sessionService ?? SessionService(),
+        _client = client ?? http.Client();
 
   final SessionService _sessionService;
   final http.Client _client;
@@ -90,11 +90,9 @@ class BranchService {
     ApiResponseLogger.logResponse('Get Branch Details API', response);
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      if (decoded is Map<String, dynamic>) {
-        return GymBranchModel.fromJson(decoded);
-      }
-      if (decoded is Map) {
-        return GymBranchModel.fromJson(Map<String, dynamic>.from(decoded));
+      final details = _extractBranchDetails(decoded);
+      if (details != null) {
+        return GymBranchModel.fromJson(details);
       }
       throw ApiException('Branch details not found.');
     }
@@ -280,6 +278,38 @@ class BranchService {
     }
 
     return const <Map<String, dynamic>>[];
+  }
+
+  Map<String, dynamic>? _extractBranchDetails(dynamic payload) {
+    if (payload is Map) {
+      final mapped = Map<String, dynamic>.from(payload);
+      final hasBranchFields = mapped.containsKey('branch_id') ||
+          mapped.containsKey('id') ||
+          mapped.containsKey('total_members') ||
+          mapped.containsKey('totalMembers');
+      if (hasBranchFields) return mapped;
+
+      final candidates = <dynamic>[
+        mapped['data'],
+        mapped['branch'],
+        mapped['details'],
+        mapped['result'],
+        mapped['item'],
+      ];
+      for (final candidate in candidates) {
+        final details = _extractBranchDetails(candidate);
+        if (details != null) return details;
+      }
+    }
+
+    if (payload is List) {
+      for (final item in payload) {
+        final details = _extractBranchDetails(item);
+        if (details != null) return details;
+      }
+    }
+
+    return null;
   }
 
   dynamic _decodeResponseBody(String body) {

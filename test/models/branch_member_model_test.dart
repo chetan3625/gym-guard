@@ -19,6 +19,19 @@ void main() {
     expect(member.joinedAt, isNotNull);
   });
 
+  test('uses member_name when provided at the root level', () {
+    final member = BranchMemberModel.fromJson(<String, dynamic>{
+      'id': 'membership-1',
+      'branch_id': 'branch-1',
+      'user_id': 'user-1',
+      'status': 'active',
+      'member_name': 'Aarav Patel',
+      'joined_at': '2026-05-26T11:30:43.011Z',
+    });
+
+    expect(member.effectiveName, 'Aarav Patel');
+  });
+
   test('uses nested user fields when backend includes profile data', () {
     final member = BranchMemberModel.fromJson(<String, dynamic>{
       'id': 'membership-1',

@@ -26,7 +26,15 @@ class MemberSearchMapper {
 
     final fallbackName = _read(
       member,
-      const ['name', 'full_name', 'fullName', 'phone', 'mobile'],
+      const [
+        'name',
+        'full_name',
+        'fullName',
+        'member_name',
+        'memberName',
+        'phone',
+        'mobile',
+      ],
     );
     return fallbackName.isNotEmpty ? fallbackName : 'Member';
   }

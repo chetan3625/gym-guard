@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:azanto/Services/session_service.dart';
 import 'package:azanto/Services/gym_service.dart';
+import 'package:azanto/Services/branch_service.dart';
 import 'package:azanto/Services/token_refresh_manager.dart';
 import 'package:azanto/core/auth/auth_role.dart';
 import 'package:azanto/controllers/profile_controller.dart';
@@ -24,6 +25,10 @@ class HomeController extends GetxController {
   final Rxn<GymSummaryData> gymSummary = Rxn<GymSummaryData>();
   bool _gymPromptLaunched = false;
   late final GymService _gymService = GymService(sessionService: session);
+  late final BranchService _branchService = Get.isRegistered<BranchService>()
+      ? Get.find<BranchService>()
+      : BranchService(sessionService: session);
+  final RxInt totalMembersCount = 0.obs;
 
   bool get isOwner {
     final sessionRole = session.authenticatedRole;
@@ -161,6 +166,46 @@ class HomeController extends GetxController {
     showGymPrompt.value = !hasGym && !session.isGymPromptDismissed;
     if (hasGym && gymSummary.value == null) {
       _hydrateGymSummary();
+    }
+    if (hasGym) {
+      fetchBranchDetails();
+    }
+  }
+
+  Future<void> fetchBranchDetails() async {
+    try {
+      final branchId = await _resolveBranchId();
+      if (branchId != null && branchId.isNotEmpty) {
+        final details =
+            await _branchService.getBranchDetails(branchId: branchId);
+        if (details.totalMembers != null) {
+          totalMembersCount.value = details.totalMembers!;
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching branch details: $e');
+    }
+  }
+
+  Future<String?> _resolveBranchId() async {
+    final storedBranchId = session.branchId?.trim() ?? '';
+    if (storedBranchId.isNotEmpty) return storedBranchId;
+
+    final gymId = session.gymId?.trim() ?? '';
+    if (gymId.isEmpty) return null;
+
+    try {
+      final branches = await _branchService.getAllBranches(gymId: gymId);
+      if (branches.isEmpty) return null;
+
+      final branchId = branches.first.branchId.trim();
+      if (branchId.isNotEmpty) {
+        await session.setBranchId(branchId);
+      }
+      return branchId;
+    } catch (e) {
+      debugPrint('Unable to resolve branch id: $e');
+      return null;
     }
   }
 
