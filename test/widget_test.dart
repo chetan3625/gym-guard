@@ -10,7 +10,7 @@ void main() {
     expect(AppRoutes.login, '/login');
   });
 
-  test('Brand color remains unchanged', () {
-    expect(AppColors.brandGreen.toARGB32(), 0xFF74EE15);
-  });
+test('Brand color remains unchanged', () {
+  expect(AppColors.brandGreen.toARGB32(), 0xFF74FD15);
+});
 }

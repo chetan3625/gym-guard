@@ -11,9 +11,12 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:azanto/Services/attendance_service.dart';
 import 'package:azanto/Services/member_service.dart';
+import 'package:azanto/Services/membership_service.dart';
 import 'package:azanto/Services/plan_service.dart';
-
+import 'package:azanto/Services/profile_service.dart';
+import 'package:azanto/Services/workout_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,8 +32,12 @@ Future<void> main() async {
 
   final session = Get.put(SessionService(), permanent: true);
   Get.put(ProfileLocalPrefsService(), permanent: true);
+  Get.lazyPut(() => AttendanceService());
   Get.lazyPut(() => MemberService());
+  Get.lazyPut(() => MembershipService());
   Get.lazyPut(() => PlanService());
+  Get.lazyPut(() => ProfileService());
+  Get.lazyPut(() => WorkoutService());
   _printTokenIfLoggedIn(context: 'app_start', session: session);
 
   // Schedule background refresh if logged in

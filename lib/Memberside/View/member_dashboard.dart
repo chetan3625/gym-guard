@@ -1,6 +1,15 @@
+import 'dart:async';
+
+import 'package:azanto/Services/attendance_service.dart';
+import 'package:azanto/Services/login_services.dart';
+import 'package:azanto/Services/membership_service.dart';
 import 'package:azanto/Services/profile_local_prefs_service.dart';
+import 'package:azanto/Services/profile_service.dart';
 import 'package:azanto/Services/session_service.dart';
 import 'package:azanto/Services/token_refresh_manager.dart';
+import 'package:azanto/Services/plan_service.dart';
+import 'package:azanto/models/profile_model.dart';
+import 'package:azanto/Memberside/View/member_attendance_history_page.dart';
 import 'package:azanto/Memberside/View/member_payment_page.dart';
 import 'package:azanto/Memberside/View/member_progress_page.dart';
 import 'package:azanto/Memberside/View/member_profile_page.dart';
@@ -27,31 +36,130 @@ class MemberDashboardScreen extends StatefulWidget {
 
 class _MemberDashboardScreenState extends State<MemberDashboardScreen> {
   final SessionService _session = Get.find<SessionService>();
+  final MembershipService _membershipService =
+      Get.isRegistered<MembershipService>()
+          ? Get.find<MembershipService>()
+          : MembershipService();
   final ProfileLocalPrefsService _profilePrefs =
       Get.find<ProfileLocalPrefsService>();
 
   int _currentIndex = 0;
   String _memberName = 'Member';
   String _memberInitial = 'M';
+  String _greetingMessage = _resolveGreetingMessage();
+  String _enrolledPlanName = '';
+  bool _isLoadingPlan = true;
+  int _profileRefreshTrigger = 0;
+  Timer? _greetingTimer;
+  ProfileModel? _profile;
 
   @override
   void initState() {
     super.initState();
     _loadMemberIdentity();
+    _startGreetingTimer();
+  }
+
+  @override
+  void dispose() {
+    _greetingTimer?.cancel();
+    super.dispose();
+  }
+
+  static String _resolveGreetingMessage() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  }
+
+  void _startGreetingTimer() {
+    _greetingTimer?.cancel();
+    _greetingTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      final nextGreeting = _resolveGreetingMessage();
+      if (!mounted || nextGreeting == _greetingMessage) return;
+      setState(() => _greetingMessage = nextGreeting);
+    });
   }
 
   Future<void> _loadMemberIdentity() async {
     final seed = await _profilePrefs.getProfileSeed();
+    _updateIdentityState(seed.firstName, seed.lastName);
+
+    try {
+      final profileService = Get.isRegistered<ProfileService>()
+          ? Get.find<ProfileService>()
+          : ProfileService();
+      final profile = await profileService.getProfile();
+      if (!mounted) return;
+      setState(() {
+        _profile = profile;
+      });
+
+      if (profile.membership != null) {
+        await _session.setGymId(profile.membership!.gymId);
+        await _session.setBranchId(profile.membership!.branchId);
+        await _session.setPlanId(profile.membership!.planId);
+      }
+
+      await _profilePrefs.saveProfileSeed(
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        phone: profile.phone,
+        email: profile.email,
+        dob: profile.dob,
+        gender: profile.gender,
+      );
+      _updateIdentityState(profile.firstName, profile.lastName);
+      await _loadEnrolledPlan();
+    } catch (e) {
+      debugPrint('Error fetching member profile on dashboard: $e');
+      await _loadEnrolledPlan();
+    }
+  }
+
+  void _updateIdentityState(String firstName, String lastName) {
     final resolvedName = [
-      seed.firstName.trim(),
-      seed.lastName.trim(),
+      firstName.trim(),
+      lastName.trim(),
     ].where((part) => part.isNotEmpty).join(' ');
 
     if (!mounted) return;
     setState(() {
       _memberName = resolvedName.isEmpty ? 'Dear' : resolvedName;
-      _memberInitial = _memberName.substring(0, 1).toUpperCase();
+      _memberInitial = _memberName.isNotEmpty 
+          ? _memberName.substring(0, 1).toUpperCase() 
+          : 'M';
     });
+  }
+
+  Future<void> _loadEnrolledPlan() async {
+    setState(() => _isLoadingPlan = true);
+    try {
+      final membership = _profile?.membership;
+      if (membership != null && membership.planId.isNotEmpty) {
+        final planService = Get.isRegistered<PlanService>()
+            ? Get.find<PlanService>()
+            : PlanService();
+        final planDetails = await planService.getPlanDetails(
+          planId: membership.planId,
+        );
+        if (!mounted) return;
+        setState(() => _enrolledPlanName = planDetails.name);
+      } else {
+        final planName = await _membershipService.getEnrolledPlanName();
+        if (!mounted) return;
+        setState(() => _enrolledPlanName = planName);
+      }
+    } on ApiException catch (_) {
+      if (!mounted) return;
+      setState(() => _enrolledPlanName = '');
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _enrolledPlanName = '');
+    } finally {
+      if (mounted) setState(() => _isLoadingPlan = false);
+    }
   }
 
   Future<void> _logout() async {
@@ -59,6 +167,22 @@ class _MemberDashboardScreenState extends State<MemberDashboardScreen> {
     await _session.clearSession();
     if (!mounted) return;
     Get.offAllNamed(AppRoutes.roleSelection);
+  }
+
+  void _openProfileTab() {
+    setState(() {
+      _currentIndex = 4;
+      _profileRefreshTrigger++;
+    });
+  }
+
+  void _handleBottomNavTap(int index) {
+    setState(() {
+      _currentIndex = index;
+      if (index == 4) {
+        _profileRefreshTrigger++;
+      }
+    });
   }
 
   @override
@@ -80,9 +204,14 @@ class _MemberDashboardScreenState extends State<MemberDashboardScreen> {
               _DashboardTab(
                 memberName: _memberName,
                 memberInitial: _memberInitial,
-                onOpenProfile: () => setState(() => _currentIndex = 4),
+                greetingMessage: _greetingMessage,
+                enrolledPlanName: _enrolledPlanName,
+                isLoadingPlan: _isLoadingPlan,
+                onOpenProfile: _openProfileTab,
               ),
-              const MemberWorkoutPage(),
+              MemberWorkoutPage(
+                isActive: _currentIndex == 1,
+              ),
               const MemberProgressPage(),
               const MemberPaymentPage(),
               MemberProfilePage(
@@ -90,6 +219,7 @@ class _MemberDashboardScreenState extends State<MemberDashboardScreen> {
                 memberInitial: _memberInitial,
                 onLogout: _logout,
                 onProfileUpdated: _loadMemberIdentity,
+                refreshTrigger: _profileRefreshTrigger,
               ),
             ],
           ),
@@ -97,7 +227,7 @@ class _MemberDashboardScreenState extends State<MemberDashboardScreen> {
       ),
       bottomNavigationBar: MemberBottomNavBar(
         currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
+        onTap: _handleBottomNavTap,
       ),
     );
   }
@@ -107,11 +237,17 @@ class _DashboardTab extends StatelessWidget {
   const _DashboardTab({
     required this.memberName,
     required this.memberInitial,
+    required this.greetingMessage,
+    required this.enrolledPlanName,
+    required this.isLoadingPlan,
     required this.onOpenProfile,
   });
 
   final String memberName;
   final String memberInitial;
+  final String greetingMessage;
+  final String enrolledPlanName;
+  final bool isLoadingPlan;
   final VoidCallback onOpenProfile;
 
   @override
@@ -136,6 +272,7 @@ class _DashboardTab extends StatelessWidget {
                     _GreetingCard(
                       memberInitial: memberInitial,
                       memberName: memberName,
+                      greetingMessage: greetingMessage,
                       onTap: onOpenProfile,
                     ),
                     const SizedBox(height: 16),
@@ -143,7 +280,12 @@ class _DashboardTab extends StatelessWidget {
                     const SizedBox(height: 14),
                     Row(
                       children: [
-                        const Expanded(child: _MembershipCard()),
+                        Expanded(
+                          child: _MembershipCard(
+                            planName: enrolledPlanName,
+                            isLoading: isLoadingPlan,
+                          ),
+                        ),
                         SizedBox(width: isWide ? 14 : 10),
                         const Expanded(child: _StreakCard()),
                       ],
@@ -192,10 +334,13 @@ class _DashboardTab extends StatelessWidget {
                           ),
                         ),
                         SizedBox(width: quickActionGap),
-                        const Expanded(
+                        Expanded(
                           child: _QuickActionCard(
                             icon: LucideIcons.calendarDays,
                             label: 'Attendance',
+                            onTap: () => Get.to<void>(
+                              () => const MemberAttendanceHistoryPage(),
+                            ),
                           ),
                         ),
                         SizedBox(width: quickActionGap),
@@ -224,11 +369,13 @@ class _GreetingCard extends StatelessWidget {
   const _GreetingCard({
     required this.memberInitial,
     required this.memberName,
+    required this.greetingMessage,
     required this.onTap,
   });
 
   final String memberInitial;
   final String memberName;
+  final String greetingMessage;
   final VoidCallback onTap;
 
   @override
@@ -264,7 +411,7 @@ class _GreetingCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Good Morning , $memberName',
+                    '$greetingMessage , $memberName',
                     style: GoogleFonts.poppins(
                       color: Colors.white,
                       fontSize: 20,
@@ -292,7 +439,13 @@ class _GreetingCard extends StatelessWidget {
 }
 
 class _MembershipCard extends StatelessWidget {
-  const _MembershipCard();
+  const _MembershipCard({
+    required this.planName,
+    required this.isLoading,
+  });
+
+  final String planName;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -334,14 +487,26 @@ class _MembershipCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 2),
-          Text(
-            'Basic Plan',
-            style: GoogleFonts.poppins(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
+          if (isLoading)
+            const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: AppColors.brandGreen,
+              ),
+            )
+          else
+            Text(
+              planName.trim().isEmpty ? 'No Plan Found' : planName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -575,46 +740,56 @@ class _QuickActionCard extends StatelessWidget {
   const _QuickActionCard({
     required this.icon,
     required this.label,
+    this.onTap,
   });
 
   final IconData icon;
   final String label;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 92,
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
-      decoration: azantoMetricCardDecoration(borderColor: Colors.transparent),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            height: 37,
-            width: 37,
-            decoration: const BoxDecoration(
-              color: AppColors.cardIconCircle,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: AppColors.brandGreen, size: 18),
-          ),
-          const SizedBox(height: 8),
-          Flexible(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                label,
-                maxLines: 1,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(7),
+        child: Container(
+          height: 92,
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+          decoration:
+              azantoMetricCardDecoration(borderColor: Colors.transparent),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                height: 37,
+                width: 37,
+                decoration: const BoxDecoration(
+                  color: AppColors.cardIconCircle,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: AppColors.brandGreen, size: 18),
+              ),
+              const SizedBox(height: 8),
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -684,8 +859,116 @@ class _BiDirectionalSlider extends StatefulWidget {
 }
 
 class _BiDirectionalSliderState extends State<_BiDirectionalSlider> {
+  late final AttendanceService _attendanceService;
+  late final SessionService _sessionService;
   double _dragPosition = 0.0;
   bool _isDragging = false;
+  bool _isSubmitting = false;
+  bool _isCheckedIn = false;
+  bool _isLoadingStatus = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _attendanceService = Get.isRegistered<AttendanceService>()
+        ? Get.find<AttendanceService>()
+        : AttendanceService();
+    _sessionService = Get.isRegistered<SessionService>()
+        ? Get.find<SessionService>()
+        : SessionService();
+    _loadCurrentAttendanceStatus();
+  }
+
+  Future<void> _loadCurrentAttendanceStatus() async {
+    try {
+      final records = await _attendanceService.myAttendance();
+      if (!mounted) return;
+      setState(() {
+        _isCheckedIn = records.any((r) => r.checkIn != null && r.checkOut == null);
+        _isLoadingStatus = false;
+      });
+    } catch (e) {
+      debugPrint('Error loading attendance status: $e');
+      if (mounted) {
+        setState(() => _isLoadingStatus = false);
+      }
+    }
+  }
+
+  Future<void> _submitAttendance({required bool isCheckIn}) async {
+    if (_isSubmitting) {
+      debugPrint(
+          'Dashboard attendance swipe skipped: request already running.');
+      return;
+    }
+
+    final gymId = _sessionService.gymId?.trim() ?? '';
+    final branchId = (_sessionService.branchId ?? gymId).trim();
+    debugPrint(
+      'Dashboard attendance swipe triggered: ${isCheckIn ? 'check-in' : 'check-out'}, gym_id=$gymId, branch_id=$branchId',
+    );
+
+    if (gymId.isEmpty || branchId.isEmpty) {
+      debugPrint(
+        'Dashboard attendance API not hit because gym_id or branch_id is empty.',
+      );
+      Get.snackbar(
+        'Attendance failed',
+        'Gym or branch is missing. Please login again.',
+        snackPosition: SnackPosition.TOP,
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+    try {
+      final response = isCheckIn
+          ? await _attendanceService.checkIn(gymId: gymId, branchId: branchId)
+          : await _attendanceService.checkOut(gymId: gymId, branchId: branchId);
+
+      if (!mounted) return;
+      setState(() {
+        _isCheckedIn = isCheckIn;
+      });
+
+      final totalTime = response.totalTime.trim();
+      Get.snackbar(
+        isCheckIn ? 'Checked In' : 'Checked Out',
+        isCheckIn
+            ? 'You have successfully checked in.'
+            : totalTime.isNotEmpty
+                ? 'You have successfully checked out. Total time: $totalTime'
+                : 'You have successfully checked out.',
+        snackPosition: SnackPosition.TOP,
+        backgroundColor:
+            (isCheckIn ? AppColors.brandGreen : const Color(0xFFFF4D4D))
+                .withValues(alpha: 0.9),
+        colorText: isCheckIn ? Colors.black : Colors.white,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 12,
+        icon: Icon(
+          isCheckIn ? Icons.check_circle_outline : Icons.logout_rounded,
+          color: isCheckIn ? Colors.black : Colors.white,
+        ),
+      );
+    } on ApiException catch (e) {
+      debugPrint('Dashboard attendance API failed: ${e.detailMessage}');
+      Get.snackbar(
+        'Attendance failed',
+        e.detailMessage,
+        snackPosition: SnackPosition.TOP,
+      );
+    } catch (e) {
+      debugPrint('Dashboard attendance API failed unexpectedly: $e');
+      Get.snackbar(
+        'Attendance failed',
+        e.toString(),
+        snackPosition: SnackPosition.TOP,
+      );
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -693,35 +976,64 @@ class _BiDirectionalSliderState extends State<_BiDirectionalSlider> {
       builder: (context, constraints) {
         final sliderWidth = constraints.maxWidth;
         const thumbWidth = 64.0;
-        final maxDrag = (sliderWidth - thumbWidth) / 2 - 4; // 4 for padding
+        const padding = 4.0;
+        const leftBound = padding;
+        final rightBound = sliderWidth - thumbWidth - padding;
+        final totalRange = rightBound - leftBound;
 
-        // Determine colors based on drag position
-        Color trackColor = const Color(0xFF1C1C1C);
-        Color activeColor = Colors.white;
-
-        if (_dragPosition > 0) {
-          activeColor = Color.lerp(Colors.white, AppColors.brandGreen,
-                  _dragPosition / maxDrag) ??
-              AppColors.brandGreen;
-        } else if (_dragPosition < 0) {
-          activeColor = Color.lerp(Colors.white, const Color(0xFFFF4D4D),
-                  -_dragPosition / maxDrag) ??
-              const Color(0xFFFF4D4D);
+        if (_isLoadingStatus) {
+          return Container(
+            height: 64,
+            width: sliderWidth,
+            decoration: BoxDecoration(
+              color: const Color(0xFF1C1C1C),
+              borderRadius: BorderRadius.circular(32),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.1),
+                width: 1.5,
+              ),
+            ),
+            child: const Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.brandGreen,
+                ),
+              ),
+            ),
+          );
         }
+
+        // Determine colors based on drag position and state
+        Color activeColor;
+        Color borderActiveColor;
+        if (_isCheckedIn) {
+          final ratio = (totalRange > 0) ? (_dragPosition / totalRange).clamp(0.0, 1.0) : 0.0;
+          activeColor = Color.lerp(AppColors.brandGreen, const Color(0xFFFF4D4D), ratio) ?? AppColors.brandGreen;
+          borderActiveColor = activeColor.withValues(alpha: 0.3);
+        } else {
+          final ratio = (totalRange > 0) ? (-_dragPosition / totalRange).clamp(0.0, 1.0) : 0.0;
+          activeColor = Color.lerp(Colors.white, AppColors.brandGreen, ratio) ?? Colors.white;
+          borderActiveColor = activeColor.withValues(alpha: ratio > 0.1 ? 0.3 : 0.1);
+        }
+
+        final thumbLeft = _isCheckedIn ? (leftBound + _dragPosition) : (rightBound + _dragPosition);
 
         return Container(
           height: 64,
           width: sliderWidth,
           decoration: BoxDecoration(
-            color: trackColor,
+            color: const Color(0xFF1C1C1C),
             borderRadius: BorderRadius.circular(32),
             border: Border.all(
-              color: activeColor.withValues(alpha: 0.3),
+              color: borderActiveColor,
               width: 1.5,
             ),
             boxShadow: [
               BoxShadow(
-                color: activeColor.withValues(alpha: 0.1),
+                color: activeColor.withValues(alpha: _isCheckedIn ? 0.15 : 0.05),
                 blurRadius: 16,
                 offset: const Offset(0, 4),
               ),
@@ -730,141 +1042,141 @@ class _BiDirectionalSliderState extends State<_BiDirectionalSlider> {
           child: Stack(
             alignment: Alignment.center,
             children: [
-              // Check-Out Text (Left)
-              Positioned(
-                left: 24,
-                child: AnimatedOpacity(
-                  duration: const Duration(milliseconds: 150),
-                  opacity: _dragPosition > 20 ? 0.0 : 1.0,
-                  child: Row(
-                    children: [
-                      Icon(Icons.keyboard_double_arrow_left_rounded,
-                          color: const Color(0xFFFF4D4D).withValues(alpha: 0.8),
-                          size: 20),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Check-Out',
-                        style: GoogleFonts.poppins(
-                          color: const Color(0xFFFF4D4D).withValues(alpha: 0.9),
-                          fontWeight: FontWeight.w600,
-                          fontSize: 15,
+              // Check-In Text (Left side, visible when user is checked out)
+              if (!_isCheckedIn)
+                Positioned(
+                  left: 24,
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 150),
+                    opacity: _dragPosition < -20 ? 0.0 : 1.0,
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.keyboard_double_arrow_left_rounded,
+                          color: AppColors.brandGreen,
+                          size: 20,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 6),
+                        Text(
+                          'Check-In',
+                          style: GoogleFonts.poppins(
+                            color: AppColors.brandGreen.withValues(alpha: 0.9),
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
 
-              // Check-In Text (Right)
-              Positioned(
-                right: 24,
-                child: AnimatedOpacity(
-                  duration: const Duration(milliseconds: 150),
-                  opacity: _dragPosition < -20 ? 0.0 : 1.0,
-                  child: Row(
-                    children: [
-                      Text(
-                        'Check-In',
-                        style: GoogleFonts.poppins(
-                          color: AppColors.brandGreen.withValues(alpha: 0.9),
-                          fontWeight: FontWeight.w600,
-                          fontSize: 15,
+              // Check-Out Text (Right side, visible when user is checked in)
+              if (_isCheckedIn)
+                Positioned(
+                  right: 24,
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 150),
+                    opacity: _dragPosition > 20 ? 0.0 : 1.0,
+                    child: Row(
+                      children: [
+                        Text(
+                          'Check-Out',
+                          style: GoogleFonts.poppins(
+                            color: const Color(0xFFFF4D4D).withValues(alpha: 0.9),
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 4),
-                      Icon(Icons.keyboard_double_arrow_right_rounded,
-                          color: AppColors.brandGreen.withValues(alpha: 0.8),
-                          size: 20),
-                    ],
+                        const SizedBox(width: 6),
+                        const Icon(
+                          Icons.keyboard_double_arrow_right_rounded,
+                          color: Color(0xFFFF4D4D),
+                          size: 20,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
 
               // The draggable Thumb
               AnimatedPositioned(
                 duration: _isDragging
                     ? Duration.zero
-                    : const Duration(milliseconds: 300),
-                curve: Curves.easeOutBack,
-                left: (sliderWidth / 2) - (thumbWidth / 2) + _dragPosition,
+                    : const Duration(milliseconds: 250),
+                curve: Curves.easeOutCubic,
+                left: thumbLeft,
+                top: 4,
                 child: GestureDetector(
                   onHorizontalDragStart: (_) {
+                    if (_isSubmitting) return;
                     setState(() => _isDragging = true);
                   },
                   onHorizontalDragUpdate: (details) {
+                    if (_isSubmitting) return;
                     setState(() {
                       _dragPosition += details.delta.dx;
-                      if (_dragPosition > maxDrag) _dragPosition = maxDrag;
-                      if (_dragPosition < -maxDrag) _dragPosition = -maxDrag;
+                      if (_isCheckedIn) {
+                        if (_dragPosition < 0.0) _dragPosition = 0.0;
+                        if (_dragPosition > totalRange) _dragPosition = totalRange;
+                      } else {
+                        if (_dragPosition > 0.0) _dragPosition = 0.0;
+                        if (_dragPosition < -totalRange) _dragPosition = -totalRange;
+                      }
                     });
                   },
                   onHorizontalDragEnd: (details) async {
+                    if (_isSubmitting) return;
                     setState(() => _isDragging = false);
 
-                    if (_dragPosition > maxDrag * 0.75) {
-                      // Trigger Check-In
-                      setState(() => _dragPosition = maxDrag);
-
-                      Get.snackbar(
-                        'Checked In',
-                        'You have successfully checked in.',
-                        snackPosition: SnackPosition.TOP,
-                        backgroundColor:
-                            AppColors.brandGreen.withValues(alpha: 0.9),
-                        colorText: Colors.black,
-                        margin: const EdgeInsets.all(16),
-                        borderRadius: 12,
-                        icon: const Icon(Icons.check_circle_outline,
-                            color: Colors.black),
-                      );
-
-                      await Future.delayed(const Duration(milliseconds: 800));
-                    } else if (_dragPosition < -maxDrag * 0.75) {
-                      // Trigger Check-Out
-                      setState(() => _dragPosition = -maxDrag);
-
-                      Get.snackbar(
-                        'Checked Out',
-                        'You have successfully checked out.',
-                        snackPosition: SnackPosition.TOP,
-                        backgroundColor:
-                            const Color(0xFFFF4D4D).withValues(alpha: 0.9),
-                        colorText: Colors.white,
-                        margin: const EdgeInsets.all(16),
-                        borderRadius: 12,
-                        icon: const Icon(Icons.logout_rounded,
-                            color: Colors.white),
-                      );
-
-                      await Future.delayed(const Duration(milliseconds: 800));
+                    if (_isCheckedIn) {
+                      if (_dragPosition > totalRange * 0.75) {
+                        setState(() => _dragPosition = totalRange);
+                        await _submitAttendance(isCheckIn: false);
+                      }
+                    } else {
+                      if (_dragPosition < -totalRange * 0.75) {
+                        setState(() => _dragPosition = -totalRange);
+                        await _submitAttendance(isCheckIn: true);
+                      }
                     }
 
-                    // Snap back to center
                     if (mounted) {
-                      setState(() => _dragPosition = 0.0);
+                      setState(() {
+                        _dragPosition = 0.0;
+                      });
                     }
                   },
                   child: Container(
                     width: thumbWidth,
-                    height: 56,
+                    height: 52,
                     decoration: BoxDecoration(
                       color: activeColor,
-                      borderRadius: BorderRadius.circular(28),
+                      borderRadius: BorderRadius.circular(26),
                       boxShadow: [
                         BoxShadow(
-                          color: activeColor.withValues(alpha: 0.4),
-                          blurRadius: 12,
-                          spreadRadius: 1,
+                          color: activeColor.withValues(alpha: 0.35),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
                         ),
                       ],
                     ),
                     child: Center(
-                      child: Icon(
-                        Icons.swap_horiz_rounded,
-                        color:
-                            _dragPosition == 0 ? Colors.black87 : Colors.black,
-                        size: 32,
-                      ),
+                      child: _isSubmitting
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.black87,
+                              ),
+                            )
+                          : Icon(
+                              _isCheckedIn
+                                  ? Icons.keyboard_double_arrow_right_rounded
+                                  : Icons.keyboard_double_arrow_left_rounded,
+                              color: Colors.black87,
+                              size: 26,
+                            ),
                     ),
                   ),
                 ),

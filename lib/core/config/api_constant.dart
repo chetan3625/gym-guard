@@ -76,7 +76,18 @@ class MemberProfileApiEndpoints {
       '${GlobalVariables.memberProfileBaseUrl}/upload-avatar';
 
   static const String getAvatar =
-      '${GlobalVariables.memberProfileBaseUrl}/getavatar';
+      '${GlobalVariables.memberProfileBaseUrl}/get-avatar';
+}
+
+class AttendanceApiEndpoints {
+  const AttendanceApiEndpoints._();
+
+  static const String checkIn =
+      '${GlobalVariables.profileBaseUrl}/attendance/checkin';
+  static const String checkOut =
+      '${GlobalVariables.profileBaseUrl}/attendance/checkout';
+  static const String myAttendance =
+      '${GlobalVariables.profileBaseUrl}/attendance/my-attendance';
 }
 
 class MembershipApiEndpoints {
@@ -86,4 +97,29 @@ class MembershipApiEndpoints {
       'https://devapi.azanto.in/profile/api/v1/member/search-member/{by_phone}';
   static String get searchMemberWithPhone => '$searchMember?phone=';
   static const String membershipPurchase = GymApiEndpoints.addMember;
+  static const String enrolledPlan =
+      '${GlobalVariables.profileBaseUrl}/membership/enrolled-plan';
+}
+
+class WorkoutApiEndpoints {
+  const WorkoutApiEndpoints._();
+
+  static const String _base = '${GlobalVariables.profileBaseUrl}/workout';
+
+  static const String createCategory = '$_base/create-categories';
+  static const String getCategories = '$_base/get-categories';
+  static const String createBodyPart = '$_base/create-body-part';
+  static const String createExercise = '$_base/create-exercise';
+  static const String trackExercise = '$_base/track-exercise';
+
+  static String bodyPartsForCategory(String categoryId) =>
+      '$_base/categories/$categoryId/body-parts';
+
+  static String exercisesForBodyPart(String bodyPartId) =>
+      '$_base/body-parts/$bodyPartId/exercises';
+
+  static String completeExercise(String trackingId) =>
+      '$_base/complete-exercise/$trackingId';
+
+  static String logHistory(String logId) => '$_base/logs/$logId/history';
 }

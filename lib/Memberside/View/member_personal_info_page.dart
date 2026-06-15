@@ -1,9 +1,16 @@
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:azanto/Memberside/constants/member_figma_layout.dart';
+import 'package:azanto/Services/login_services.dart';
 import 'package:azanto/Services/profile_local_prefs_service.dart';
+import 'package:azanto/Services/profile_service.dart';
+import 'package:azanto/models/profile_model.dart';
 import 'package:azanto/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 /// Figma: `personal info` (178:204) — opened from Edit Profile.
@@ -18,6 +25,10 @@ class MemberPersonalInfoPage extends StatefulWidget {
 
 class _MemberPersonalInfoPageState extends State<MemberPersonalInfoPage> {
   final _profilePrefs = Get.find<ProfileLocalPrefsService>();
+  final _profileService = Get.isRegistered<ProfileService>()
+      ? Get.find<ProfileService>()
+      : ProfileService();
+  final _imagePicker = ImagePicker();
 
   late final TextEditingController _fullNameController;
   late final TextEditingController _gymNameController;
@@ -25,6 +36,11 @@ class _MemberPersonalInfoPageState extends State<MemberPersonalInfoPage> {
   late final TextEditingController _phoneController;
   late final TextEditingController _dobController;
   String _gender = 'Male';
+  String? _avatarFilePath;
+  Uint8List? _avatarBytes;
+  String? _avatarUrl;
+  bool _isUploadingAvatar = false;
+  ProfileModel? _serverProfile;
 
   static const _genders = ['Male', 'Female', 'Non-binary', 'Prefer not to say'];
 
@@ -37,6 +53,31 @@ class _MemberPersonalInfoPageState extends State<MemberPersonalInfoPage> {
     _phoneController = TextEditingController();
     _dobController = TextEditingController();
     _loadProfile();
+    _loadAvatar();
+  }
+
+  String _formatToUiDob(String? apiDob) {
+    if (apiDob == null || apiDob.trim().isEmpty) return '';
+    final parts = apiDob.trim().split('-');
+    if (parts.length == 3) {
+      final year = parts[0];
+      final month = parts[1];
+      final day = parts[2];
+      return '$day/$month/$year';
+    }
+    return apiDob;
+  }
+
+  String _formatToApiDob(String? uiDob) {
+    if (uiDob == null || uiDob.trim().isEmpty) return '';
+    final parts = uiDob.trim().split('/');
+    if (parts.length == 3) {
+      final day = parts[0];
+      final month = parts[1];
+      final year = parts[2];
+      return '$year-$month-$day';
+    }
+    return uiDob;
   }
 
   Future<void> _loadProfile() async {
@@ -45,19 +86,70 @@ class _MemberPersonalInfoPageState extends State<MemberPersonalInfoPage> {
     final last = seed.lastName;
     final fullName = [first, last].where((p) => p.isNotEmpty).join(' ');
 
-    if (!mounted) return;
-    setState(() {
-      _fullNameController.text =
-          fullName.isNotEmpty ? fullName : 'Alex Adams';
-      _gymNameController.text =
-          seed.gymName.isNotEmpty ? seed.gymName : 'Getfit Studio';
-      _lastNameController.text = last.isNotEmpty ? last : 'Adams';
-      _phoneController.text =
-          seed.phone.isNotEmpty ? seed.phone : '+91 9500999999';
-      _dobController.text =
-          seed.dob.isNotEmpty ? seed.dob : '15/06/1995';
-      _gender = seed.gender.isNotEmpty ? seed.gender : 'Male';
-    });
+    if (mounted) {
+      setState(() {
+        _fullNameController.text = fullName.isNotEmpty ? fullName : 'Alex Adams';
+        _gymNameController.text =
+            seed.gymName.isNotEmpty ? seed.gymName : 'Getfit Studio';
+        _lastNameController.text = last.isNotEmpty ? last : 'Adams';
+        _phoneController.text =
+            seed.phone.isNotEmpty ? seed.phone : '+91 9500999999';
+        _dobController.text = seed.dob.isNotEmpty ? seed.dob : '15/06/1995';
+        _gender = seed.gender.isNotEmpty ? seed.gender : 'Male';
+      });
+    }
+
+    try {
+      final profile = await _profileService.getProfile();
+      _serverProfile = profile;
+      final serverFirst = profile.firstName;
+      final serverLast = profile.lastName;
+      final serverFullName = [serverFirst, serverLast].where((p) => p.isNotEmpty).join(' ');
+
+      if (!mounted) return;
+      setState(() {
+        if (serverFullName.isNotEmpty) {
+          _fullNameController.text = serverFullName;
+        }
+        if (serverLast.isNotEmpty) {
+          _lastNameController.text = serverLast;
+        }
+        if (profile.phone.isNotEmpty) {
+          _phoneController.text = profile.phone;
+        }
+        if (profile.dob.isNotEmpty) {
+          _dobController.text = _formatToUiDob(profile.dob);
+        }
+        if (profile.gender.isNotEmpty) {
+          _gender = profile.gender;
+        }
+      });
+
+      await _profilePrefs.saveProfileSeed(
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        phone: profile.phone,
+        email: profile.email,
+        dob: profile.dob,
+        gender: profile.gender,
+      );
+    } catch (e) {
+      debugPrint('Error loading profile from API on personal info page: $e');
+    }
+  }
+
+  Future<void> _loadAvatar() async {
+    try {
+      final avatar = await _profileService.getAvatar();
+      if (!mounted || !avatar.hasData) return;
+      setState(() {
+        _avatarBytes = avatar.bytes;
+        _avatarUrl = avatar.url?.trim();
+        _avatarFilePath = null;
+      });
+    } catch (_) {
+      // The rest of the profile form should remain usable if avatar loading fails.
+    }
   }
 
   @override
@@ -120,7 +212,8 @@ class _MemberPersonalInfoPageState extends State<MemberPersonalInfoPage> {
           children: _genders
               .map(
                 (option) => ListTile(
-                  title: Text(option, style: const TextStyle(color: Colors.white)),
+                  title:
+                      Text(option, style: const TextStyle(color: Colors.white)),
                   trailing: _gender == option
                       ? const Icon(Icons.check, color: MemberFigmaColors.accent)
                       : null,
@@ -136,6 +229,67 @@ class _MemberPersonalInfoPageState extends State<MemberPersonalInfoPage> {
     );
   }
 
+  Future<void> _uploadAvatar() async {
+    if (_isUploadingAvatar) return;
+
+    final pickedImage = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1200,
+      maxHeight: 1200,
+      imageQuality: 86,
+    );
+    if (pickedImage == null) return;
+
+    setState(() {
+      _isUploadingAvatar = true;
+      _avatarFilePath = pickedImage.path;
+    });
+
+    try {
+      final message = await _profileService.uploadAvatar(
+        filePath: pickedImage.path,
+      );
+      try {
+        final avatar = await _profileService.getAvatar();
+        if (mounted && avatar.hasData) {
+          setState(() {
+            _avatarBytes = avatar.bytes;
+            _avatarUrl = avatar.url?.trim();
+            _avatarFilePath = null;
+          });
+        }
+      } catch (_) {
+        // Keep the local preview if the upload succeeded but refresh is delayed.
+      }
+      if (!mounted) return;
+      Get.snackbar(
+        'Avatar updated',
+        message,
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: MemberFigmaColors.accent.withValues(alpha: 0.92),
+        colorText: MemberFigmaColors.accentDarkText,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 10,
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      Get.snackbar(
+        'Upload failed',
+        e.detailMessage,
+        snackPosition: SnackPosition.TOP,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      Get.snackbar(
+        'Upload failed',
+        e.toString(),
+        snackPosition: SnackPosition.TOP,
+      );
+    } finally {
+      if (mounted) setState(() => _isUploadingAvatar = false);
+    }
+  }
+
   Future<void> _save() async {
     final fullName = _fullNameController.text.trim();
     final lastName = _lastNameController.text.trim();
@@ -149,26 +303,58 @@ class _MemberPersonalInfoPageState extends State<MemberPersonalInfoPage> {
     }
 
     final split = _splitFullName(fullName);
-    await _profilePrefs.saveProfileSeed(
-      firstName: split.firstName,
-      lastName: lastName,
-      phone: _phoneController.text.trim(),
-      gymName: _gymNameController.text.trim(),
-      dob: _dobController.text.trim(),
-      gender: _gender,
-    );
+    
+    try {
+      final seed = await _profilePrefs.getProfileSeed();
 
-    if (!mounted) return;
-    Get.back<bool>(result: true);
-    Get.snackbar(
-      'Profile updated',
-      'Your personal information was saved.',
-      snackPosition: SnackPosition.TOP,
-      backgroundColor: MemberFigmaColors.accent.withValues(alpha: 0.92),
-      colorText: MemberFigmaColors.accentDarkText,
-      margin: const EdgeInsets.all(16),
-      borderRadius: 10,
-    );
+      final updatedProfile = await _profileService.updateProfile(<String, dynamic>{
+        'first_name': split.firstName,
+        'last_name': lastName,
+        'quote': _serverProfile?.quote ?? '',
+        'gender': _gender,
+        'dob': _formatToApiDob(_dobController.text),
+        'height': _serverProfile?.height ?? 0,
+        'weight': _serverProfile?.weight ?? 0,
+        'phone': _phoneController.text.trim(),
+        'email': _serverProfile?.email ?? seed.email,
+      });
+
+      await _profilePrefs.saveProfileSeed(
+        firstName: updatedProfile.firstName,
+        lastName: updatedProfile.lastName,
+        phone: updatedProfile.phone,
+        email: updatedProfile.email,
+        dob: updatedProfile.dob,
+        gender: updatedProfile.gender,
+        gymName: _gymNameController.text.trim(),
+      );
+
+      if (!mounted) return;
+      Get.back<bool>(result: true);
+      Get.snackbar(
+        'Profile updated',
+        'Your personal information was saved.',
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: MemberFigmaColors.accent.withValues(alpha: 0.92),
+        colorText: MemberFigmaColors.accentDarkText,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 10,
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      Get.snackbar(
+        'Update failed',
+        e.detailMessage,
+        snackPosition: SnackPosition.TOP,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      Get.snackbar(
+        'Update failed',
+        e.toString(),
+        snackPosition: SnackPosition.TOP,
+      );
+    }
   }
 
   ({String firstName, String lastName}) _splitFullName(String rawName) {
@@ -215,6 +401,11 @@ class _MemberPersonalInfoPageState extends State<MemberPersonalInfoPage> {
                 _ProfileAvatarSection(
                   layout: layout,
                   avatarLetter: widget.avatarLetter,
+                  avatarFilePath: _avatarFilePath,
+                  avatarBytes: _avatarBytes,
+                  avatarUrl: _avatarUrl,
+                  isUploading: _isUploadingAvatar,
+                  onEditTap: _uploadAvatar,
                 ),
                 SizedBox(height: layout.s(20)),
                 _FormCard(
@@ -301,10 +492,20 @@ class _ProfileAvatarSection extends StatelessWidget {
   const _ProfileAvatarSection({
     required this.layout,
     required this.avatarLetter,
+    required this.avatarFilePath,
+    required this.avatarBytes,
+    required this.avatarUrl,
+    required this.isUploading,
+    required this.onEditTap,
   });
 
   final MemberFigmaLayout layout;
   final String avatarLetter;
+  final String? avatarFilePath;
+  final Uint8List? avatarBytes;
+  final String? avatarUrl;
+  final bool isUploading;
+  final VoidCallback onEditTap;
 
   @override
   Widget build(BuildContext context) {
@@ -316,26 +517,25 @@ class _ProfileAvatarSection extends StatelessWidget {
         Stack(
           clipBehavior: Clip.none,
           children: [
-            Container(
-              width: avatarSize,
-              height: avatarSize,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: MemberFigmaColors.accent, width: 3),
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFFF6F6F6), Color(0xFFDBDBDB)],
-                ),
-              ),
-              child: Center(
-                child: Text(
-                  avatarLetter,
-                  style: GoogleFonts.poppins(
-                    fontSize: layout.s(40),
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF2D2D2D),
+            ClipOval(
+              child: Container(
+                width: avatarSize,
+                height: avatarSize,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: MemberFigmaColors.accent, width: 3),
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFFF6F6F6), Color(0xFFDBDBDB)],
                   ),
+                ),
+                child: _AvatarImage(
+                  avatarLetter: avatarLetter,
+                  avatarFilePath: avatarFilePath,
+                  avatarBytes: avatarBytes,
+                  avatarUrl: avatarUrl,
+                  fontSize: layout.s(40),
                 ),
               ),
             ),
@@ -346,20 +546,24 @@ class _ProfileAvatarSection extends StatelessWidget {
                 color: MemberFigmaColors.accent,
                 shape: const CircleBorder(),
                 child: InkWell(
-                  onTap: () => Get.snackbar(
-                    'Photo',
-                    'Profile photo upload coming soon.',
-                    snackPosition: SnackPosition.TOP,
-                  ),
+                  onTap: isUploading ? null : onEditTap,
                   customBorder: const CircleBorder(),
                   child: SizedBox(
                     width: editSize,
                     height: editSize,
-                    child: Icon(
-                      LucideIcons.pencil,
-                      size: layout.s(16),
-                      color: MemberFigmaColors.accentDarkText,
-                    ),
+                    child: isUploading
+                        ? Padding(
+                            padding: EdgeInsets.all(layout.s(7)),
+                            child: const CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: MemberFigmaColors.accentDarkText,
+                            ),
+                          )
+                        : Icon(
+                            LucideIcons.pencil,
+                            size: layout.s(16),
+                            color: MemberFigmaColors.accentDarkText,
+                          ),
                   ),
                 ),
               ),
@@ -376,6 +580,68 @@ class _ProfileAvatarSection extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _AvatarImage extends StatelessWidget {
+  const _AvatarImage({
+    required this.avatarLetter,
+    required this.avatarFilePath,
+    required this.avatarBytes,
+    required this.avatarUrl,
+    required this.fontSize,
+  });
+
+  final String avatarLetter;
+  final String? avatarFilePath;
+  final Uint8List? avatarBytes;
+  final String? avatarUrl;
+  final double fontSize;
+
+  @override
+  Widget build(BuildContext context) {
+    final imageUrl = avatarUrl?.trim() ?? '';
+    if (avatarBytes != null) {
+      return Image.memory(avatarBytes!, fit: BoxFit.cover);
+    }
+    if (imageUrl.isNotEmpty) {
+      return Image.network(
+        imageUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _InitialAvatar(
+          avatarLetter: avatarLetter,
+          fontSize: fontSize,
+        ),
+      );
+    }
+    if (avatarFilePath != null) {
+      return Image.file(File(avatarFilePath!), fit: BoxFit.cover);
+    }
+    return _InitialAvatar(avatarLetter: avatarLetter, fontSize: fontSize);
+  }
+}
+
+class _InitialAvatar extends StatelessWidget {
+  const _InitialAvatar({
+    required this.avatarLetter,
+    required this.fontSize,
+  });
+
+  final String avatarLetter;
+  final double fontSize;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Text(
+        avatarLetter,
+        style: GoogleFonts.poppins(
+          fontSize: fontSize,
+          fontWeight: FontWeight.w700,
+          color: const Color(0xFF2D2D2D),
+        ),
+      ),
     );
   }
 }

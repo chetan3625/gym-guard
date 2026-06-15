@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:azanto/Services/login_services.dart';
 import 'package:azanto/Services/session_service.dart';
@@ -7,6 +6,7 @@ import 'package:azanto/Services/token_refresh_service.dart';
 import 'package:azanto/core/config/global_variables.dart';
 import 'package:azanto/models/profile_model.dart';
 import 'package:azanto/utils/api_response_logger.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class AvatarPayload {
@@ -110,6 +110,7 @@ class ProfileService {
     );
     request.headers['Authorization'] = authorization;
     request.files.add(await http.MultipartFile.fromPath('file', filePath));
+    debugPrint('Upload Avatar API request file: $filePath');
 
     final streamedResponse = await request.send();
     final response = await http.Response.fromStream(streamedResponse);

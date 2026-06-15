@@ -1,10 +1,15 @@
+import 'dart:typed_data';
+
+import 'package:azanto/Memberside/View/member_attendance_history_page.dart';
 import 'package:azanto/Memberside/View/member_personal_info_page.dart';
 import 'package:azanto/Memberside/View/member_settings_page.dart';
 import 'package:azanto/Memberside/constants/member_figma_layout.dart';
 import 'package:azanto/Services/profile_local_prefs_service.dart';
+import 'package:azanto/Services/profile_service.dart';
 import 'package:azanto/core/theme/app_colors.dart';
 import 'package:azanto/views/widgets/azanto_mobile_shell.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -16,12 +21,14 @@ class MemberProfilePage extends StatefulWidget {
     required this.memberInitial,
     required this.onLogout,
     this.onProfileUpdated,
+    this.refreshTrigger = 0,
   });
 
   final String memberName;
   final String memberInitial;
   final Future<void> Function() onLogout;
   final VoidCallback? onProfileUpdated;
+  final int refreshTrigger;
 
   @override
   State<MemberProfilePage> createState() => _MemberProfilePageState();
@@ -29,35 +36,236 @@ class MemberProfilePage extends StatefulWidget {
 
 class _MemberProfilePageState extends State<MemberProfilePage> {
   final _profilePrefs = Get.find<ProfileLocalPrefsService>();
+  final _profileService = Get.isRegistered<ProfileService>()
+      ? Get.find<ProfileService>()
+      : ProfileService();
 
   String _email = 'alexadams@gmail.com';
   String _phone = '+91 9500999999';
   String _branch = 'Cape Town , New York';
+  Uint8List? _avatarBytes;
+  String? _avatarUrl;
+
+  String _profileId = '19248';
+  num _weight = 0;
+  num _height = 0;
+  String _memberName = '';
+  String _memberInitial = '';
 
   @override
   void initState() {
     super.initState();
     _loadProfile();
+    _loadAvatar();
+  }
+
+  @override
+  void didUpdateWidget(covariant MemberProfilePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.refreshTrigger != widget.refreshTrigger) {
+      _loadProfile();
+      _loadAvatar();
+    }
   }
 
   Future<void> _loadProfile() async {
-    final seed = await _profilePrefs.getProfileSeed();
-    if (!mounted) return;
-    setState(() {
-      _email = seed.email.isNotEmpty ? seed.email : 'alexadams@gmail.com';
-      _phone = seed.phone.isNotEmpty ? seed.phone : '+91 9500999999';
-      _branch = seed.gymName.isNotEmpty ? seed.gymName : 'Cape Town , New York';
-    });
+    try {
+      final profile = await _profileService.getProfile();
+      await _profilePrefs.saveProfileSeed(
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        phone: profile.phone,
+        email: profile.email,
+        dob: profile.dob,
+        gender: profile.gender,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _email = profile.email.isNotEmpty ? profile.email : 'alexadams@gmail.com';
+        _phone = profile.phone.isNotEmpty ? profile.phone : '+91 9500999999';
+        _profileId = profile.id.isNotEmpty ? profile.id : '19248';
+        _weight = profile.weight;
+        _height = profile.height;
+
+        final resolvedName = [
+          profile.firstName.trim(),
+          profile.lastName.trim(),
+        ].where((part) => part.isNotEmpty).join(' ');
+        _memberName = resolvedName.isEmpty ? widget.memberName : resolvedName;
+        _memberInitial = _memberName.isNotEmpty 
+            ? _memberName.substring(0, 1).toUpperCase() 
+            : widget.memberInitial;
+      });
+    } catch (e) {
+      debugPrint('Error fetching member profile inside MemberProfilePage: $e');
+      final seed = await _profilePrefs.getProfileSeed();
+      if (!mounted) return;
+      setState(() {
+        _email = seed.email.isNotEmpty ? seed.email : 'alexadams@gmail.com';
+        _phone = seed.phone.isNotEmpty ? seed.phone : '+91 9500999999';
+
+        final resolvedName = [
+          seed.firstName.trim(),
+          seed.lastName.trim(),
+        ].where((part) => part.isNotEmpty).join(' ');
+        _memberName = resolvedName.isEmpty ? widget.memberName : resolvedName;
+        _memberInitial = _memberName.isNotEmpty 
+            ? _memberName.substring(0, 1).toUpperCase() 
+            : widget.memberInitial;
+      });
+    } finally {
+      final seed = await _profilePrefs.getProfileSeed();
+      if (mounted) {
+        setState(() {
+          _branch = seed.gymName.isNotEmpty ? seed.gymName : 'Cape Town , New York';
+        });
+      }
+    }
+  }
+
+  Future<void> _loadAvatar() async {
+    try {
+      final avatar = await _profileService.getAvatar();
+      if (!mounted || !avatar.hasData) return;
+      setState(() {
+        _avatarBytes = avatar.bytes;
+        _avatarUrl = avatar.url?.trim();
+      });
+    } catch (_) {
+      // Keep showing initials if avatar API is unavailable.
+    }
+  }
+
+  Future<void> _updateProfileField(String fieldKey, dynamic value) async {
+    final profile = await _profileService.getProfile();
+    final payload = <String, dynamic>{
+      'first_name': profile.firstName,
+      'last_name': profile.lastName,
+      'quote': profile.quote,
+      'gender': profile.gender,
+      'dob': profile.dob,
+      'height': profile.height,
+      'weight': profile.weight,
+      'phone': profile.phone,
+      'email': profile.email,
+    };
+    payload[fieldKey] = value;
+    final updated = await _profileService.updateProfile(payload);
+    await _profilePrefs.saveProfileSeed(
+      firstName: updated.firstName,
+      lastName: updated.lastName,
+      phone: updated.phone,
+      email: updated.email,
+      dob: updated.dob,
+      gender: updated.gender,
+    );
+    await _loadProfile();
+    widget.onProfileUpdated?.call();
+  }
+
+  Future<void> _showAddDialog({
+    required String title,
+    required String labelText,
+    required String currentValue,
+    required TextInputType keyboardType,
+    required Future<void> Function(String newValue) onSave,
+  }) async {
+    final controller = TextEditingController(text: currentValue);
+    final formKey = GlobalKey<FormState>();
+
+    await Get.dialog<void>(
+      AlertDialog(
+        backgroundColor: MemberFigmaColors.cardBg,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: MemberFigmaColors.cardBorder),
+        ),
+        title: Text(
+          title,
+          style: GoogleFonts.poppins(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: controller,
+            keyboardType: keyboardType,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              labelText: labelText,
+              labelStyle: const TextStyle(color: MemberFigmaColors.label),
+              enabledBorder: OutlineInputBorder(
+                borderSide: const BorderSide(color: MemberFigmaColors.cardIconCircle),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderSide: const BorderSide(color: MemberFigmaColors.accent),
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            validator: (val) {
+              if (val == null || val.trim().isEmpty) {
+                return 'Please enter a value';
+              }
+              if (keyboardType == TextInputType.number) {
+                if (num.tryParse(val.trim()) == null) {
+                  return 'Please enter a valid number';
+                }
+              }
+              return null;
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back<void>(),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: MemberFigmaColors.accent,
+              foregroundColor: MemberFigmaColors.accentDarkText,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () async {
+              if (formKey.currentState?.validate() ?? false) {
+                Get.back<void>();
+                try {
+                  await onSave(controller.text.trim());
+                  Get.snackbar(
+                    'Success',
+                    '$title updated successfully.',
+                    backgroundColor: MemberFigmaColors.accent.withValues(alpha: 0.92),
+                    colorText: MemberFigmaColors.accentDarkText,
+                  );
+                } catch (e) {
+                  Get.snackbar(
+                    'Error',
+                    'Failed to update: $e',
+                    snackPosition: SnackPosition.TOP,
+                  );
+                }
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _openPersonalInfo() async {
     final saved = await Get.to<bool>(
-      () => MemberPersonalInfoPage(avatarLetter: widget.memberInitial),
+      () => MemberPersonalInfoPage(avatarLetter: _memberInitial.isNotEmpty ? _memberInitial : widget.memberInitial),
     );
     if (saved == true) {
       widget.onProfileUpdated?.call();
       await _loadProfile();
     }
+    await _loadAvatar();
   }
 
   @override
@@ -77,12 +285,14 @@ class _MemberProfilePageState extends State<MemberProfilePage> {
         children: [
           _ProfileAvatarSection(
             layout: layout,
-            memberInitial: widget.memberInitial,
+            memberInitial: _memberInitial.isNotEmpty ? _memberInitial : widget.memberInitial,
+            avatarBytes: _avatarBytes,
+            avatarUrl: _avatarUrl,
             onEditTap: _openPersonalInfo,
           ),
           SizedBox(height: layout.s(10)),
           Text(
-            widget.memberName,
+            _memberName.isNotEmpty ? _memberName : widget.memberName,
             textAlign: TextAlign.center,
             style: layout.montserrat(
               size: 22,
@@ -91,9 +301,30 @@ class _MemberProfilePageState extends State<MemberProfilePage> {
             ),
           ),
           SizedBox(height: layout.s(10)),
-          const _MembershipIdBar(membershipId: '19248'),
+          _MembershipIdBar(membershipId: _profileId),
           SizedBox(height: layout.s(12)),
-          const _ProfileMetricsRow(),
+          _ProfileMetricsRow(
+            weight: _weight,
+            height: _height,
+            onWeightTap: () {
+              _showAddDialog(
+                title: _weight > 0 ? 'Edit Weight' : 'Add Weight',
+                labelText: 'Weight (Kg)',
+                currentValue: _weight > 0 ? _weight.toString() : '',
+                keyboardType: TextInputType.number,
+                onSave: (val) => _updateProfileField('weight', num.parse(val)),
+              );
+            },
+            onHeightTap: () {
+              _showAddDialog(
+                title: _height > 0 ? 'Edit Height' : 'Add Height',
+                labelText: 'Height (cm)',
+                currentValue: _height > 0 ? _height.toString() : '',
+                keyboardType: TextInputType.number,
+                onSave: (val) => _updateProfileField('height', num.parse(val)),
+              );
+            },
+          ),
           SizedBox(height: layout.s(18)),
           _SectionLabel(layout: layout, title: 'Personal Details'),
           SizedBox(height: layout.s(10)),
@@ -102,6 +333,15 @@ class _MemberProfilePageState extends State<MemberProfilePage> {
             email: _email,
             phone: _phone,
             branch: _branch,
+            onEmailTap: () {
+              _showAddDialog(
+                title: (_email.isNotEmpty && _email != 'alexadams@gmail.com') ? 'Edit Email' : 'Add Email',
+                labelText: 'Email Address',
+                currentValue: (_email.isNotEmpty && _email != 'alexadams@gmail.com') ? _email : '',
+                keyboardType: TextInputType.emailAddress,
+                onSave: (val) => _updateProfileField('email', val),
+              );
+            },
           ),
           SizedBox(height: layout.s(22)),
           _SectionLabel(layout: layout, title: 'Preference & Support'),
@@ -110,10 +350,8 @@ class _MemberProfilePageState extends State<MemberProfilePage> {
             layout: layout,
             icon: LucideIcons.calendarDays,
             label: 'Attendance History',
-            onTap: () => Get.snackbar(
-              'Attendance',
-              'Your attendance history will appear here.',
-              snackPosition: SnackPosition.TOP,
+            onTap: () => Get.to<void>(
+              () => const MemberAttendanceHistoryPage(),
             ),
           ),
           SizedBox(height: layout.s(7)),
@@ -149,11 +387,15 @@ class _ProfileAvatarSection extends StatelessWidget {
   const _ProfileAvatarSection({
     required this.layout,
     required this.memberInitial,
+    required this.avatarBytes,
+    required this.avatarUrl,
     required this.onEditTap,
   });
 
   final MemberFigmaLayout layout;
   final String memberInitial;
+  final Uint8List? avatarBytes;
+  final String? avatarUrl;
   final VoidCallback onEditTap;
 
   @override
@@ -165,25 +407,31 @@ class _ProfileAvatarSection extends StatelessWidget {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          Container(
-            width: avatarSize,
-            height: avatarSize,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: MemberFigmaColors.accent, width: 3),
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFFF6F6F6), Color(0xFFDBDBDB)],
+          ClipOval(
+            child: Container(
+              width: avatarSize,
+              height: avatarSize,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: MemberFigmaColors.accent, width: 3),
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFFF6F6F6), Color(0xFFDBDBDB)],
+                ),
               ),
-            ),
-            child: Center(
-              child: Text(
-                memberInitial,
-                style: layout.montserrat(
-                  size: 36,
-                  weight: FontWeight.w700,
-                  color: const Color(0xFF2D2D2D),
+              child: _AvatarImage(
+                avatarBytes: avatarBytes,
+                avatarUrl: avatarUrl,
+                fallback: Center(
+                  child: Text(
+                    memberInitial,
+                    style: layout.montserrat(
+                      size: 36,
+                      weight: FontWeight.w700,
+                      color: const Color(0xFF2D2D2D),
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -212,6 +460,34 @@ class _ProfileAvatarSection extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _AvatarImage extends StatelessWidget {
+  const _AvatarImage({
+    required this.avatarBytes,
+    required this.avatarUrl,
+    required this.fallback,
+  });
+
+  final Uint8List? avatarBytes;
+  final String? avatarUrl;
+  final Widget fallback;
+
+  @override
+  Widget build(BuildContext context) {
+    final imageUrl = avatarUrl?.trim() ?? '';
+    if (avatarBytes != null) {
+      return Image.memory(avatarBytes!, fit: BoxFit.cover);
+    }
+    if (imageUrl.isNotEmpty) {
+      return Image.network(
+        imageUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => fallback,
+      );
+    }
+    return fallback;
   }
 }
 
@@ -246,13 +522,19 @@ class _MembershipIdBar extends StatelessWidget {
               ),
             ),
             const Spacer(),
-            Text(
-              membershipId,
-              style: layout.montserrat(
-                size: 11,
-                weight: FontWeight.w700,
-                color: MemberFigmaColors.accent,
-                letterSpacing: 0.4,
+            Expanded(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: Text(
+                  membershipId,
+                  style: layout.montserrat(
+                    size: 11,
+                    weight: FontWeight.w700,
+                    color: MemberFigmaColors.accent,
+                    letterSpacing: 0.4,
+                  ),
+                ),
               ),
             ),
           ],
@@ -263,7 +545,34 @@ class _MembershipIdBar extends StatelessWidget {
 }
 
 class _ProfileMetricsRow extends StatelessWidget {
-  const _ProfileMetricsRow();
+  const _ProfileMetricsRow({
+    required this.weight,
+    required this.height,
+    this.onWeightTap,
+    this.onHeightTap,
+  });
+
+  final num weight;
+  final num height;
+  final VoidCallback? onWeightTap;
+  final VoidCallback? onHeightTap;
+
+  String _calculateBmi() {
+    if (weight <= 0 || height <= 0) return '-';
+    final heightInMeters = height / 100.0;
+    final bmi = weight / (heightInMeters * heightInMeters);
+    return bmi.toStringAsFixed(1);
+  }
+
+  String _getBmiCategory() {
+    if (weight <= 0 || height <= 0) return 'N/A';
+    final heightInMeters = height / 100.0;
+    final bmi = weight / (heightInMeters * heightInMeters);
+    if (bmi < 18.5) return 'Underweight';
+    if (bmi < 25.0) return 'Normal';
+    if (bmi < 30.0) return 'Overweight';
+    return 'Obese';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -275,8 +584,9 @@ class _ProfileMetricsRow extends StatelessWidget {
           child: _MetricCard(
             layout: layout,
             label: 'WEIGHT',
-            value: '75',
-            unit: 'Kg',
+            value: weight > 0 ? weight.toString() : 'Add',
+            unit: weight > 0 ? 'Kg' : null,
+            onTap: onWeightTap,
           ),
         ),
         SizedBox(width: layout.s(8)),
@@ -284,8 +594,9 @@ class _ProfileMetricsRow extends StatelessWidget {
           child: _MetricCard(
             layout: layout,
             label: 'HEIGHT',
-            value: '189',
-            unit: 'cm',
+            value: height > 0 ? height.toString() : 'Add',
+            unit: height > 0 ? 'cm' : null,
+            onTap: onHeightTap,
           ),
         ),
         SizedBox(width: layout.s(8)),
@@ -293,8 +604,8 @@ class _ProfileMetricsRow extends StatelessWidget {
           child: _MetricCard(
             layout: layout,
             label: 'BMI',
-            value: '24',
-            subtitle: 'Normal',
+            value: _calculateBmi(),
+            subtitle: _getBmiCategory(),
           ),
         ),
       ],
@@ -309,6 +620,7 @@ class _MetricCard extends StatelessWidget {
     required this.value,
     this.unit,
     this.subtitle,
+    this.onTap,
   });
 
   final MemberFigmaLayout layout;
@@ -316,16 +628,21 @@ class _MetricCard extends StatelessWidget {
   final String value;
   final String? unit;
   final String? subtitle;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final bool isAction = value == 'Add';
+
+    final cardContent = Container(
       height: layout.s(66),
       padding: layout.padLTRB(8, 10, 8, 8),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+        border: Border.all(
+          color: isAction ? MemberFigmaColors.accent.withValues(alpha: 0.4) : Colors.white.withValues(alpha: 0.12),
+        ),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -367,7 +684,7 @@ class _MetricCard extends StatelessWidget {
                     style: layout.montserrat(
                       size: 16,
                       weight: FontWeight.w700,
-                      color: Colors.white,
+                      color: isAction ? MemberFigmaColors.accent : Colors.white,
                     ),
                   ),
                   if (unit != null)
@@ -385,6 +702,18 @@ class _MetricCard extends StatelessWidget {
         ],
       ),
     );
+
+    if (onTap != null) {
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: cardContent,
+        ),
+      );
+    }
+    return cardContent;
   }
 }
 
@@ -417,15 +746,19 @@ class _PersonalDetailsCard extends StatelessWidget {
     required this.email,
     required this.phone,
     required this.branch,
+    this.onEmailTap,
   });
 
   final MemberFigmaLayout layout;
   final String email;
   final String phone;
   final String branch;
+  final VoidCallback? onEmailTap;
 
   @override
   Widget build(BuildContext context) {
+    final isDummyEmail = email.isEmpty || email == 'alexadams@gmail.com';
+
     return Container(
       decoration: BoxDecoration(
         color: MemberFigmaColors.cardBg,
@@ -438,8 +771,9 @@ class _PersonalDetailsCard extends StatelessWidget {
             layout: layout,
             icon: LucideIcons.mail,
             label: 'Email',
-            value: email,
+            value: isDummyEmail ? 'Add Email' : email,
             showDivider: true,
+            onTap: onEmailTap,
           ),
           _PersonalDetailRow(
             layout: layout,
@@ -468,6 +802,7 @@ class _PersonalDetailRow extends StatelessWidget {
     required this.label,
     required this.value,
     required this.showDivider,
+    this.onTap,
   });
 
   final MemberFigmaLayout layout;
@@ -475,10 +810,13 @@ class _PersonalDetailRow extends StatelessWidget {
   final String label;
   final String value;
   final bool showDivider;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final bool isAction = value == 'Add Email';
+
+    final rowContent = Container(
       padding: layout.padLTRB(10, 12, 12, 12),
       decoration: BoxDecoration(
         border: showDivider
@@ -512,7 +850,7 @@ class _PersonalDetailRow extends StatelessWidget {
                   style: layout.montserrat(
                     size: 14,
                     weight: FontWeight.w600,
-                    color: MemberFigmaColors.textPrimary,
+                    color: isAction ? MemberFigmaColors.accent : MemberFigmaColors.textPrimary,
                   ),
                 ),
               ],
@@ -521,6 +859,18 @@ class _PersonalDetailRow extends StatelessWidget {
         ],
       ),
     );
+
+    if (onTap != null) {
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(10),
+          child: rowContent,
+        ),
+      );
+    }
+    return rowContent;
   }
 }
 

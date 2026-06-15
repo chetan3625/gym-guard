@@ -1,3 +1,5 @@
+import 'package:azanto/models/membership_model.dart';
+
 class MemberProfileDetailsModel {
   const MemberProfileDetailsModel({
     required this.id,
@@ -15,6 +17,7 @@ class MemberProfileDetailsModel {
     required this.avatarUrl,
     required this.createdAt,
     required this.updatedAt,
+    this.membership,
   });
 
   final String id;
@@ -32,6 +35,7 @@ class MemberProfileDetailsModel {
   final String? avatarUrl;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final MemberMembershipModel? membership;
 
   String get fullName {
     final name = [firstName, lastName]
@@ -69,6 +73,11 @@ class MemberProfileDetailsModel {
       avatarUrl: _readText(json, const ['avatar_url', 'avatarUrl']),
       createdAt: _parseDate(json['created_at'] ?? json['createdAt']),
       updatedAt: _parseDate(json['updated_at'] ?? json['updatedAt']),
+      membership: json['membership'] != null
+          ? MemberMembershipModel.fromJson(
+              Map<String, dynamic>.from(json['membership'] as Map),
+            )
+          : null,
     );
   }
 

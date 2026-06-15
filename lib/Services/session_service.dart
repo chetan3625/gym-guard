@@ -10,6 +10,7 @@ class SessionService {
   static const _loggedKey = 'is_logged_in';
   static const _gymIdKey = 'gym_id';
   static const _branchIdKey = 'branch_id';
+  static const _planIdKey = 'plan_id';
   static const _gymPromptDismissedKey = 'gym_prompt_dismissed';
   static const _roleKey = 'auth_role';
   static const _authSnapshotKey = 'last_auth_response';
@@ -25,6 +26,7 @@ class SessionService {
   String? get refreshToken => _box.read<String>(_refreshTokenKey);
   String? get gymId => _box.read<String>(_gymIdKey);
   String? get branchId => _box.read<String>(_branchIdKey);
+  String? get planId => _box.read<String>(_planIdKey);
   bool get isGymPromptDismissed => _box.read(_gymPromptDismissedKey) == true;
   String? get authenticatedRole {
     final storedRole = AuthRole.normalize(_box.read<String>(_roleKey));
@@ -48,6 +50,8 @@ class SessionService {
     if (stored is Map) return Map<String, dynamic>.from(stored);
     return null;
   }
+
+  Map<String, dynamic>? get tokenClaims => _decodeJwtPayload(token);
 
   String? get normalizedToken => _normalizeAccessToken(token);
   String? get bearerToken {
@@ -99,6 +103,7 @@ class SessionService {
     await _box.remove(_loggedKey);
     await _box.remove(_gymIdKey);
     await _box.remove(_branchIdKey);
+    await _box.remove(_planIdKey);
     await _box.remove(_gymPromptDismissedKey);
     await _box.remove(_roleKey);
     await _box.remove(_authSnapshotKey);
@@ -112,6 +117,11 @@ class SessionService {
   Future<void> setBranchId(String? branchId) async {
     if (branchId == null || branchId.trim().isEmpty) return;
     await _box.write(_branchIdKey, branchId.trim());
+  }
+
+  Future<void> setPlanId(String? planId) async {
+    if (planId == null || planId.trim().isEmpty) return;
+    await _box.write(_planIdKey, planId.trim());
   }
 
   Future<void> setGymPromptDismissed(bool dismissed) async {
@@ -154,6 +164,35 @@ class SessionService {
       snapshot['role'] = resolvedRole;
     }
 
+    for (final key in const [
+      'gym_id',
+      'gymId',
+      'branch_id',
+      'branchId',
+      'plan_id',
+      'planId',
+      'user_id',
+      'userId',
+      'member_id',
+      'memberId',
+      'payment_id',
+      'paymentId',
+      'transaction_id',
+      'transactionId',
+    ]) {
+      final value = response[key]?.toString().trim();
+      if (value != null && value.isNotEmpty) {
+        snapshot[key] = value;
+      }
+    }
+
+    for (final key in const ['user', 'member', 'membership', 'plan']) {
+      final value = response[key];
+      if (value is Map) {
+        snapshot[key] = Map<String, dynamic>.from(value);
+      }
+    }
+
     return snapshot;
   }
 
@@ -167,13 +206,30 @@ class SessionService {
         return null;
       }
 
-      final payload = utf8.decode(
-        base64Url.decode(base64Url.normalize(parts[1])),
-      );
-      final decoded = jsonDecode(payload);
+      final decoded = _decodeJwtPayload(normalized);
       return AuthRole.extractFromPayload(decoded);
     } catch (_) {
       return null;
     }
+  }
+
+  Map<String, dynamic>? _decodeJwtPayload(String? rawToken) {
+    final normalized = _normalizeAccessToken(rawToken);
+    if (normalized == null || normalized.isEmpty) return null;
+
+    try {
+      final parts = normalized.split('.');
+      if (parts.length < 2) return null;
+
+      final payload = utf8.decode(
+        base64Url.decode(base64Url.normalize(parts[1])),
+      );
+      final decoded = jsonDecode(payload);
+      if (decoded is Map<String, dynamic>) return decoded;
+      if (decoded is Map) return Map<String, dynamic>.from(decoded);
+    } catch (_) {
+      return null;
+    }
+    return null;
   }
 }

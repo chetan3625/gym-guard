@@ -1,3 +1,5 @@
+import 'package:azanto/models/membership_model.dart';
+
 class ProfileModel {
   const ProfileModel({
     required this.firstName,
@@ -9,6 +11,10 @@ class ProfileModel {
     required this.weight,
     required this.phone,
     required this.email,
+    required this.id,
+    required this.avatarUrl,
+    required this.userId,
+    this.membership,
   });
 
   final String firstName;
@@ -20,6 +26,10 @@ class ProfileModel {
   final num weight;
   final String phone;
   final String email;
+  final String id;
+  final String avatarUrl;
+  final String userId;
+  final MemberMembershipModel? membership;
 
   factory ProfileModel.fromJson(Map<String, dynamic> json) {
     return ProfileModel(
@@ -32,6 +42,14 @@ class ProfileModel {
       weight: _parseNum(json['weight']),
       phone: (json['phone'] ?? '').toString().trim(),
       email: (json['email'] ?? '').toString().trim(),
+      id: (json['id'] ?? '').toString().trim(),
+      avatarUrl: (json['avatar_url'] ?? '').toString().trim(),
+      userId: (json['user_id'] ?? '').toString().trim(),
+      membership: json['membership'] != null
+          ? MemberMembershipModel.fromJson(
+              Map<String, dynamic>.from(json['membership'] as Map),
+            )
+          : null,
     );
   }
 
