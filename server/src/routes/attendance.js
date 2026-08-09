@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { v4: uuidv4 } = require('uuid');
 const authMiddleware = require('../middleware/auth');
-const { dbGet, dbAll, dbRun } = require('../database/db');
+const { Attendance } = require('../models');
 
 // POST /profile/api/v1/attendance/checkin
 router.post('/checkin', authMiddleware, async (req, res) => {
@@ -12,19 +11,20 @@ router.post('/checkin', authMiddleware, async (req, res) => {
       return res.status(400).json({ detail: 'gym_id and branch_id are required' });
     }
 
-    const attendanceId = uuidv4();
-    const checkinTime = new Date().toISOString();
-
-    await dbRun(
-      'INSERT INTO attendances (id, user_id, gym_id, branch_id, checkin_time, status) VALUES (?, ?, ?, ?, ?, ?)',
-      [attendanceId, req.user.id, gym_id, branch_id, checkinTime, 'CheckedIn']
-    );
-
-    return res.status(200).json({
-      id: attendanceId,
+    const checkinTime = new Date();
+    const attendance = await Attendance.create({
+      user_id: req.user._id,
       gym_id,
       branch_id,
       checkin_time: checkinTime,
+      status: 'CheckedIn',
+    });
+
+    return res.status(200).json({
+      id: attendance._id,
+      gym_id,
+      branch_id,
+      checkin_time: attendance.checkin_time,
       checkout_time: null,
       status: 'CheckedIn',
     });
@@ -42,39 +42,35 @@ router.post('/checkout', authMiddleware, async (req, res) => {
       return res.status(400).json({ detail: 'gym_id and branch_id are required' });
     }
 
-    const checkoutTime = new Date().toISOString();
-
-    const attendance = await dbGet(
-      `SELECT * FROM attendances WHERE user_id = ? AND gym_id = ? AND branch_id = ? AND status = 'CheckedIn'
-       ORDER BY checkin_time DESC LIMIT 1`,
-      [req.user.id, gym_id, branch_id]
-    );
-
-    let attendanceId;
-    let checkinTime;
+    const checkoutTime = new Date();
+    let attendance = await Attendance.findOne({
+      user_id: req.user._id,
+      gym_id,
+      branch_id,
+      status: 'CheckedIn',
+    }).sort({ checkin_time: -1 });
 
     if (!attendance) {
-      attendanceId = uuidv4();
-      checkinTime = checkoutTime;
-      await dbRun(
-        'INSERT INTO attendances (id, user_id, gym_id, branch_id, checkin_time, checkout_time, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [attendanceId, req.user.id, gym_id, branch_id, checkinTime, checkoutTime, 'CheckedOut']
-      );
+      attendance = await Attendance.create({
+        user_id: req.user._id,
+        gym_id,
+        branch_id,
+        checkin_time: checkoutTime,
+        checkout_time: checkoutTime,
+        status: 'CheckedOut',
+      });
     } else {
-      attendanceId = attendance.id;
-      checkinTime = attendance.checkin_time;
-      await dbRun(
-        `UPDATE attendances SET checkout_time = ?, status = 'CheckedOut' WHERE id = ?`,
-        [checkoutTime, attendanceId]
-      );
+      attendance.checkout_time = checkoutTime;
+      attendance.status = 'CheckedOut';
+      await attendance.save();
     }
 
     return res.status(200).json({
-      id: attendanceId,
+      id: attendance._id,
       gym_id,
       branch_id,
-      checkin_time: checkinTime,
-      checkout_time: checkoutTime,
+      checkin_time: attendance.checkin_time,
+      checkout_time: attendance.checkout_time,
       status: 'CheckedOut',
     });
   } catch (error) {
@@ -86,13 +82,9 @@ router.post('/checkout', authMiddleware, async (req, res) => {
 // GET /profile/api/v1/attendance/my-attendance
 router.get('/my-attendance', authMiddleware, async (req, res) => {
   try {
-    const records = await dbAll(
-      'SELECT * FROM attendances WHERE user_id = ? ORDER BY checkin_time DESC',
-      [req.user.id]
-    );
-
+    const records = await Attendance.find({ user_id: req.user._id }).sort({ checkin_time: -1 });
     const results = records.map((a) => ({
-      id: a.id,
+      id: a._id,
       gym_id: a.gym_id,
       branch_id: a.branch_id,
       checkin_time: a.checkin_time,

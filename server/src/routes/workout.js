@@ -1,31 +1,28 @@
 const express = require('express');
 const router = express.Router();
-const { v4: uuidv4 } = require('uuid');
 const authMiddleware = require('../middleware/auth');
-const { dbGet, dbAll, dbRun } = require('../database/db');
+const {
+  WorkoutCategory,
+  WorkoutBodyPart,
+  WorkoutExercise,
+  WorkoutTracking,
+} = require('../models');
 
 // GET /profile/api/v1/workout/get-categories
 router.get('/get-categories', authMiddleware, async (req, res) => {
   try {
-    let categories = await dbAll('SELECT * FROM workout_categories');
+    let categories = await WorkoutCategory.find();
     if (!categories || categories.length === 0) {
       const defaultCats = [
-        ['Upper Body Focus', 'Chest, shoulders, arms and upper back exercises'],
-        ['Lower Body Focus', 'Quads, hamstrings, calves and glutes exercises'],
-        ['Core & Cardio', 'Abs, endurance and aerobic cardiovascular training'],
+        { name: 'Upper Body Focus', description: 'Chest, shoulders, arms and upper back exercises' },
+        { name: 'Lower Body Focus', description: 'Quads, hamstrings, calves and glutes exercises' },
+        { name: 'Core & Cardio', description: 'Abs, endurance and aerobic cardiovascular training' },
       ];
-      for (const [name, desc] of defaultCats) {
-        await dbRun('INSERT INTO workout_categories (id, name, description) VALUES (?, ?, ?)', [
-          uuidv4(),
-          name,
-          desc,
-        ]);
-      }
-      categories = await dbAll('SELECT * FROM workout_categories');
+      categories = await WorkoutCategory.insertMany(defaultCats);
     }
 
     const results = categories.map((c) => ({
-      category_id: c.id,
+      category_id: c._id,
       name: c.name,
       description: c.description || '',
     }));
@@ -45,17 +42,15 @@ router.post('/create-categories', authMiddleware, async (req, res) => {
       return res.status(400).json({ detail: 'Category name is required' });
     }
 
-    const categoryId = uuidv4();
-    await dbRun('INSERT INTO workout_categories (id, name, description) VALUES (?, ?, ?)', [
-      categoryId,
-      name.trim(),
-      (description || '').trim(),
-    ]);
-
-    return res.status(201).json({
-      category_id: categoryId,
+    const cat = await WorkoutCategory.create({
       name: name.trim(),
       description: (description || '').trim(),
+    });
+
+    return res.status(201).json({
+      category_id: cat._id,
+      name: cat.name,
+      description: cat.description,
     });
   } catch (error) {
     console.error('Create category error:', error);
@@ -67,26 +62,20 @@ router.post('/create-categories', authMiddleware, async (req, res) => {
 router.get('/categories/:category_id/body-parts', authMiddleware, async (req, res) => {
   try {
     const { category_id } = req.params;
-    let parts = await dbAll('SELECT * FROM workout_body_parts WHERE category_id = ?', [category_id]);
+    let parts = await WorkoutBodyPart.find({ category_id });
 
     if (!parts || parts.length === 0) {
-      const category = await dbGet('SELECT * FROM workout_categories WHERE id = ?', [category_id]);
+      const category = await WorkoutCategory.findById(category_id);
       const names = category && category.name.includes('Upper')
         ? ['Chest', 'Shoulders', 'Biceps', 'Triceps']
         : ['Legs', 'Abs', 'Back'];
 
-      for (const name of names) {
-        await dbRun('INSERT INTO workout_body_parts (id, category_id, name) VALUES (?, ?, ?)', [
-          uuidv4(),
-          category_id,
-          name,
-        ]);
-      }
-      parts = await dbAll('SELECT * FROM workout_body_parts WHERE category_id = ?', [category_id]);
+      const docs = names.map((n) => ({ category_id, name: n }));
+      parts = await WorkoutBodyPart.insertMany(docs);
     }
 
     const results = parts.map((p) => ({
-      body_part_id: p.id,
+      body_part_id: p._id,
       name: p.name,
       category_id: p.category_id,
     }));
@@ -106,17 +95,15 @@ router.post('/create-body-part', authMiddleware, async (req, res) => {
       return res.status(400).json({ detail: 'name and category_id are required' });
     }
 
-    const bodyPartId = uuidv4();
-    await dbRun('INSERT INTO workout_body_parts (id, category_id, name) VALUES (?, ?, ?)', [
-      bodyPartId,
-      category_id.trim(),
-      name.trim(),
-    ]);
+    const bp = await WorkoutBodyPart.create({
+      category_id: category_id.trim(),
+      name: name.trim(),
+    });
 
     return res.status(201).json({
-      body_part_id: bodyPartId,
-      name: name.trim(),
-      category_id: category_id.trim(),
+      body_part_id: bp._id,
+      name: bp.name,
+      category_id: bp.category_id,
     });
   } catch (error) {
     console.error('Create body part error:', error);
@@ -128,27 +115,20 @@ router.post('/create-body-part', authMiddleware, async (req, res) => {
 router.get('/body-parts/:body_part_id/exercises', authMiddleware, async (req, res) => {
   try {
     const { body_part_id } = req.params;
-    let exercises = await dbAll('SELECT * FROM workout_exercises WHERE body_part_id = ?', [body_part_id]);
+    let exercises = await WorkoutExercise.find({ body_part_id });
 
     if (!exercises || exercises.length === 0) {
-      const bp = await dbGet('SELECT * FROM workout_body_parts WHERE id = ?', [body_part_id]);
+      const bp = await WorkoutBodyPart.findById(body_part_id);
       const bpName = bp ? bp.name : 'Default';
       const defaultExs = [
-        [`Standard ${bpName} Press`, 'Lower bar to target area and push vertically', 3, 10],
-        [`Incline ${bpName} Flyes`, 'Maintain slight elbow bend and squeeze at top', 3, 12],
+        { body_part_id, name: `Standard ${bpName} Press`, description: 'Lower bar to target area and push vertically', default_sets: 3, default_reps: 10 },
+        { body_part_id, name: `Incline ${bpName} Flyes`, description: 'Maintain slight elbow bend and squeeze at top', default_sets: 3, default_reps: 12 },
       ];
-
-      for (const [name, desc, sets, reps] of defaultExs) {
-        await dbRun(
-          'INSERT INTO workout_exercises (id, body_part_id, name, description, default_sets, default_reps) VALUES (?, ?, ?, ?, ?, ?)',
-          [uuidv4(), body_part_id, name, desc, sets, reps]
-        );
-      }
-      exercises = await dbAll('SELECT * FROM workout_exercises WHERE body_part_id = ?', [body_part_id]);
+      exercises = await WorkoutExercise.insertMany(defaultExs);
     }
 
     const results = exercises.map((e) => ({
-      exercise_id: e.id,
+      exercise_id: e._id,
       name: e.name,
       body_part_id: e.body_part_id,
       description: e.description || '',
@@ -172,29 +152,23 @@ router.post('/create-exercise', authMiddleware, async (req, res) => {
       return res.status(400).json({ detail: 'name and body_part_id are required' });
     }
 
-    const exerciseId = uuidv4();
-    await dbRun(
-      `INSERT INTO workout_exercises (id, body_part_id, name, description, media_url, default_sets, default_reps)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [
-        exerciseId,
-        body_part_id.trim(),
-        name.trim(),
-        (description || '').trim(),
-        (media_url || '').trim(),
-        default_sets || 3,
-        default_reps || 10,
-      ]
-    );
-
-    return res.status(201).json({
-      exercise_id: exerciseId,
-      name: name.trim(),
+    const ex = await WorkoutExercise.create({
       body_part_id: body_part_id.trim(),
+      name: name.trim(),
       description: (description || '').trim(),
       media_url: (media_url || '').trim(),
       default_sets: default_sets || 3,
       default_reps: default_reps || 10,
+    });
+
+    return res.status(201).json({
+      exercise_id: ex._id,
+      name: ex.name,
+      body_part_id: ex.body_part_id,
+      description: ex.description || '',
+      media_url: ex.media_url || '',
+      default_sets: ex.default_sets,
+      default_reps: ex.default_reps,
     });
   } catch (error) {
     console.error('Create exercise error:', error);
@@ -210,18 +184,20 @@ router.post('/track-exercise', authMiddleware, async (req, res) => {
       return res.status(400).json({ detail: 'exercise_id, sets_completed, and reps_completed are required' });
     }
 
-    const trackingId = uuidv4();
     const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const logId = `log_${dateStr}`;
 
-    await dbRun(
-      `INSERT INTO workout_trackings (id, log_id, user_id, exercise_id, sets_completed, reps_completed, is_completed)
-       VALUES (?, ?, ?, ?, ?, ?, 0)`,
-      [trackingId, logId, req.user.id, exercise_id.trim(), sets_completed, reps_completed.trim()]
-    );
+    const tracking = await WorkoutTracking.create({
+      log_id: logId,
+      user_id: req.user._id,
+      exercise_id: exercise_id.trim(),
+      sets_completed,
+      reps_completed: reps_completed.trim(),
+      is_completed: false,
+    });
 
     return res.status(200).json({
-      tracking_id: trackingId,
+      tracking_id: tracking._id,
       log_id: logId,
       exercise_id: exercise_id.trim(),
       sets_completed: Number(sets_completed),
@@ -241,23 +217,20 @@ router.patch('/complete-exercise/:tracking_id', authMiddleware, async (req, res)
     const { tracking_id } = req.params;
     const { is_completed } = req.body;
 
-    const tracking = await dbGet('SELECT * FROM workout_trackings WHERE id = ?', [tracking_id]);
+    const tracking = await WorkoutTracking.findById(tracking_id);
     if (!tracking) {
       return res.status(404).json({ detail: 'Tracking record not found' });
     }
 
-    const completed = is_completed !== undefined ? (is_completed ? 1 : 0) : 1;
-    const completedAt = completed ? new Date().toISOString() : null;
+    const completed = is_completed !== undefined ? Boolean(is_completed) : true;
+    tracking.is_completed = completed;
+    tracking.completed_at = completed ? new Date() : null;
+    await tracking.save();
 
-    await dbRun(
-      'UPDATE workout_trackings SET is_completed = ?, completed_at = ? WHERE id = ?',
-      [completed, completedAt, tracking_id]
-    );
-
-    const allLogs = await dbAll('SELECT * FROM workout_trackings WHERE log_id = ?', [tracking.log_id]);
+    const allLogs = await WorkoutTracking.find({ log_id: tracking.log_id });
 
     const exercises = allLogs.map((item) => ({
-      tracking_id: item.id,
+      tracking_id: item._id,
       exercise_id: item.exercise_id,
       sets_completed: item.sets_completed,
       reps_completed: item.reps_completed,
@@ -279,10 +252,10 @@ router.patch('/complete-exercise/:tracking_id', authMiddleware, async (req, res)
 router.get('/logs/:log_id/history', authMiddleware, async (req, res) => {
   try {
     const { log_id } = req.params;
-    const allLogs = await dbAll('SELECT * FROM workout_trackings WHERE log_id = ?', [log_id]);
+    const allLogs = await WorkoutTracking.find({ log_id });
 
     const exercises = allLogs.map((item) => ({
-      tracking_id: item.id,
+      tracking_id: item._id,
       exercise_id: item.exercise_id,
       sets_completed: item.sets_completed,
       reps_completed: item.reps_completed,

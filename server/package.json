@@ -1,15 +1,14 @@
 {
   "name": "azanto-backend-server",
   "version": "1.0.0",
-  "description": "Node.js Express backend service for Azanto Gym Management & Tracker Application",
+  "description": "Node.js Express & MongoDB backend service for Azanto Gym Management & Tracker Application",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "node --watch src/index.js",
-    "postinstall": "npm rebuild sqlite3 --build-from-source"
+    "dev": "node --watch src/index.js"
   },
   "engines": {
-    "node": "20.x"
+    "node": ">=18.0.0"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
@@ -17,8 +16,8 @@
     "dotenv": "^17.2.4",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.9.0",
     "multer": "^1.4.5-lts.1",
-    "sqlite3": "^6.0.1",
     "uuid": "^11.1.0"
   }
 }

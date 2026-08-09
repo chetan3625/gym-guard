@@ -5,9 +5,8 @@ const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const authMiddleware = require('../middleware/auth');
 const config = require('../config');
-const { dbGet, dbAll, dbRun } = require('../database/db');
+const { Gym, GymBranch, Membership, User, Plan } = require('../models');
 
-// Setup multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, config.uploadsDir),
   filename: (req, file, cb) => {
@@ -25,20 +24,21 @@ router.post('/gym/onboardNewGym', authMiddleware, async (req, res) => {
       return res.status(400).json({ detail: 'Gym name and email are required' });
     }
 
-    const gymId = uuidv4();
-    const active = isActive !== undefined ? (isActive ? 1 : 0) : (is_active !== undefined ? (is_active ? 1 : 0) : 1);
+    const active = isActive !== undefined ? Boolean(isActive) : (is_active !== undefined ? Boolean(is_active) : true);
 
-    await dbRun(
-      'INSERT INTO gyms (id, owner_id, name, email, is_active) VALUES (?, ?, ?, ?, ?)',
-      [gymId, req.user.id, name.trim(), email.trim(), active]
-    );
-
-    return res.status(201).json({
-      id: gymId,
-      gym_id: gymId,
+    const gym = await Gym.create({
+      owner_id: req.user._id,
       name: name.trim(),
       email: email.trim(),
-      is_active: Boolean(active),
+      is_active: active,
+    });
+
+    return res.status(201).json({
+      id: gym._id,
+      gym_id: gym._id,
+      name: gym.name,
+      email: gym.email,
+      is_active: gym.is_active,
     });
   } catch (error) {
     console.error('Onboard gym error:', error);
@@ -49,18 +49,18 @@ router.post('/gym/onboardNewGym', authMiddleware, async (req, res) => {
 // GET /gym-branch/api/v1/gym/getGym
 router.get('/gym/getGym', authMiddleware, async (req, res) => {
   try {
-    const gym = await dbGet('SELECT * FROM gyms WHERE owner_id = ? LIMIT 1', [req.user.id]);
+    const gym = await Gym.findOne({ owner_id: req.user._id });
     if (!gym) {
       return res.status(200).json([]);
     }
 
     return res.status(200).json({
-      id: gym.id,
-      gym_id: gym.id,
+      id: gym._id,
+      gym_id: gym._id,
       name: gym.name,
       email: gym.email,
       description: gym.description || 'Premium Strength and Conditioning Gym',
-      is_active: Boolean(gym.is_active),
+      is_active: gym.is_active,
       logo_url: gym.logo_url || null,
     });
   } catch (error) {
@@ -75,27 +75,24 @@ router.patch('/gym/updateGymDetails/:gym_id', authMiddleware, async (req, res) =
     const { gym_id } = req.params;
     const { name, email, description, is_active } = req.body;
 
-    const gym = await dbGet('SELECT * FROM gyms WHERE id = ? AND owner_id = ?', [gym_id, req.user.id]);
+    const gym = await Gym.findOne({ _id: gym_id, owner_id: req.user._id });
     if (!gym) {
       return res.status(404).json({ detail: 'Gym not found' });
     }
 
-    const updatedName = name ? name.trim() : gym.name;
-    const updatedEmail = email ? email.trim() : gym.email;
-    const updatedDesc = description !== undefined ? description : gym.description;
-    const updatedActive = is_active !== undefined ? (is_active ? 1 : 0) : gym.is_active;
+    if (name) gym.name = name.trim();
+    if (email) gym.email = email.trim();
+    if (description !== undefined) gym.description = description;
+    if (is_active !== undefined) gym.is_active = Boolean(is_active);
 
-    await dbRun(
-      'UPDATE gyms SET name = ?, email = ?, description = ?, is_active = ? WHERE id = ?',
-      [updatedName, updatedEmail, updatedDesc, updatedActive, gym_id]
-    );
+    await gym.save();
 
     return res.status(200).json({
-      id: gym_id,
-      name: updatedName,
-      email: updatedEmail,
-      description: updatedDesc,
-      is_active: Boolean(updatedActive),
+      id: gym._id,
+      name: gym.name,
+      email: gym.email,
+      description: gym.description,
+      is_active: gym.is_active,
     });
   } catch (error) {
     console.error('Update gym error:', error);
@@ -112,7 +109,7 @@ router.post('/gym/upload-logo/:gym_id', authMiddleware, upload.single('file'), a
     }
 
     const logoUrl = `/media/${req.file.filename}`;
-    await dbRun('UPDATE gyms SET logo_url = ? WHERE id = ?', [logoUrl, gym_id]);
+    await Gym.findByIdAndUpdate(gym_id, { logo_url: logoUrl });
 
     return res.status(200).json({ logo_url: logoUrl });
   } catch (error) {
@@ -124,7 +121,7 @@ router.post('/gym/upload-logo/:gym_id', authMiddleware, upload.single('file'), a
 // GET /gym-branch/api/v1/gym/get-logo/:gym_id
 router.get('/gym/get-logo/:gym_id', authMiddleware, async (req, res) => {
   try {
-    const gym = await dbGet('SELECT logo_url FROM gyms WHERE id = ?', [req.params.gym_id]);
+    const gym = await Gym.findById(req.params.gym_id);
     return res.status(200).json({ logo_url: gym ? gym.logo_url || '' : '' });
   } catch (error) {
     return res.status(500).json({ detail: 'Internal server error' });
@@ -153,39 +150,31 @@ router.post('/gym/branch/addbranch', authMiddleware, async (req, res) => {
       return res.status(400).json({ detail: 'gym_id, name, address, and city are required' });
     }
 
-    const branchId = uuidv4();
-    const active = is_active !== undefined ? (is_active ? 1 : 0) : 1;
-
-    await dbRun(
-      `INSERT INTO gym_branches (id, gym_id, name, address, city, state, country, pincode, latitude, longitude, is_active, opening_time, closing_time)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        branchId,
-        gym_id,
-        name.trim(),
-        address.trim(),
-        city.trim(),
-        (state || '').trim(),
-        (country || '').trim(),
-        (pincode || '').trim(),
-        latitude || 0.0,
-        longitude || 0.0,
-        active,
-        opening_time || '06:00:00.000Z',
-        closing_time || '22:00:00.000Z',
-      ]
-    );
-
-    return res.status(201).json({
-      branch_id: branchId,
+    const branch = await GymBranch.create({
       gym_id,
       name: name.trim(),
       address: address.trim(),
       city: city.trim(),
       state: (state || '').trim(),
+      country: (country || '').trim(),
       pincode: (pincode || '').trim(),
+      latitude: latitude || 0.0,
+      longitude: longitude || 0.0,
+      is_active: is_active !== undefined ? Boolean(is_active) : true,
       opening_time: opening_time || '06:00:00.000Z',
       closing_time: closing_time || '22:00:00.000Z',
+    });
+
+    return res.status(201).json({
+      branch_id: branch._id,
+      gym_id,
+      name: branch.name,
+      address: branch.address,
+      city: branch.city,
+      state: branch.state,
+      pincode: branch.pincode,
+      opening_time: branch.opening_time,
+      closing_time: branch.closing_time,
       total_members: 0,
       active_members: 0,
     });
@@ -198,13 +187,13 @@ router.post('/gym/branch/addbranch', authMiddleware, async (req, res) => {
 // GET /gym-branch/api/v1/gym/get-all-branches/:gym_id
 router.get('/gym/get-all-branches/:gym_id', authMiddleware, async (req, res) => {
   try {
-    const branches = await dbAll('SELECT * FROM gym_branches WHERE gym_id = ?', [req.params.gym_id]);
+    const branches = await GymBranch.find({ gym_id: req.params.gym_id });
     const results = [];
 
     for (const b of branches) {
-      const countRow = await dbGet('SELECT COUNT(*) as count FROM memberships WHERE branch_id = ?', [b.id]);
+      const count = await Membership.countDocuments({ branch_id: b._id });
       results.push({
-        branch_id: b.id,
+        branch_id: b._id,
         gym_id: b.gym_id,
         name: b.name,
         address: b.address,
@@ -213,8 +202,8 @@ router.get('/gym/get-all-branches/:gym_id', authMiddleware, async (req, res) => 
         pincode: b.pincode,
         opening_time: b.opening_time,
         closing_time: b.closing_time,
-        total_members: countRow ? countRow.count : 0,
-        active_members: countRow ? countRow.count : 0,
+        total_members: count,
+        active_members: count,
       });
     }
 
@@ -228,15 +217,15 @@ router.get('/gym/get-all-branches/:gym_id', authMiddleware, async (req, res) => 
 // GET /gym-branch/api/v1/gym/branch/getbranchdetails/:branch_id
 router.get('/gym/branch/getbranchdetails/:branch_id', authMiddleware, async (req, res) => {
   try {
-    const branch = await dbGet('SELECT * FROM gym_branches WHERE id = ?', [req.params.branch_id]);
+    const branch = await GymBranch.findById(req.params.branch_id);
     if (!branch) {
       return res.status(404).json({ detail: 'Branch not found' });
     }
 
-    const countRow = await dbGet('SELECT COUNT(*) as count FROM memberships WHERE branch_id = ?', [branch.id]);
+    const count = await Membership.countDocuments({ branch_id: branch._id });
 
     return res.status(200).json({
-      branch_id: branch.id,
+      branch_id: branch._id,
       gym_id: branch.gym_id,
       name: branch.name,
       address: branch.address,
@@ -245,8 +234,8 @@ router.get('/gym/branch/getbranchdetails/:branch_id', authMiddleware, async (req
       pincode: branch.pincode,
       opening_time: branch.opening_time,
       closing_time: branch.closing_time,
-      total_members: countRow ? countRow.count : 0,
-      active_members: countRow ? countRow.count : 0,
+      total_members: count,
+      active_members: count,
     });
   } catch (error) {
     return res.status(500).json({ detail: 'Internal server error' });
@@ -256,12 +245,12 @@ router.get('/gym/branch/getbranchdetails/:branch_id', authMiddleware, async (req
 // GET /gym-branch/api/v1/gym/branch/getallbranchmembers/:branch_id
 router.get('/gym/branch/getallbranchmembers/:branch_id', authMiddleware, async (req, res) => {
   try {
-    const memberships = await dbAll('SELECT * FROM memberships WHERE branch_id = ?', [req.params.branch_id]);
+    const memberships = await Membership.find({ branch_id: req.params.branch_id });
     const results = [];
 
     for (const m of memberships) {
-      const u = await dbGet('SELECT * FROM users WHERE id = ?', [m.user_id]);
-      const p = await dbGet('SELECT * FROM plans WHERE id = ?', [m.plan_id]);
+      const u = await User.findById(m.user_id);
+      const p = await Plan.findById(m.plan_id);
 
       results.push({
         user_id: m.user_id,
@@ -290,18 +279,19 @@ router.post('/gym/branch/addmember', authMiddleware, async (req, res) => {
       return res.status(400).json({ detail: 'gym_id, branch_id, plan_id, and user_id are required' });
     }
 
-    const membershipId = uuidv4();
-    const paymentId = `pay_${uuidv4().replace(/-/g, '').substring(0, 8)}`;
-
-    await dbRun(
-      `INSERT INTO memberships (id, gym_id, branch_id, plan_id, user_id, amount, payment_mode, payment_id, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Active')`,
-      [membershipId, gym_id, branch_id, plan_id, user_id, amount || 0.0, payment_mode || 'cash', paymentId]
-    );
+    const membership = await Membership.create({
+      gym_id,
+      branch_id,
+      plan_id,
+      user_id,
+      amount: amount || 0.0,
+      payment_mode: payment_mode || 'cash',
+      status: 'Active',
+    });
 
     return res.status(200).json({
       message: 'Member added and plan assigned successfully',
-      membership_id: membershipId,
+      membership_id: membership._id,
       status: 'Active',
     });
   } catch (error) {

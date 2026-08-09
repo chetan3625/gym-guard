@@ -163,7 +163,7 @@ class _OfflineSplashState extends StatelessWidget {
                         child: Text(
                           'Offline Mode',
                           style: GoogleFonts.inter(
-                            color: const Color(0xFF89D5FF),
+                            color: AppColors.electricNeonGreen,
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 0.3,
@@ -192,7 +192,7 @@ class _OfflineSplashState extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Azanto needs a live connection to load your gym, plans, and latest session safely.',
+                      'GymGuard needs a live connection to load your gym, plans, and latest session safely.',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.inter(
                         color: Colors.white.withValues(alpha: 0.72),
@@ -229,7 +229,7 @@ class _OfflineSplashState extends StatelessWidget {
                         onPressed: isRetrying ? null : () => onRetryTap(),
                         style: ElevatedButton.styleFrom(
                           foregroundColor: AppColors.black,
-                          backgroundColor: const Color(0xFF7BE255),
+                          backgroundColor: AppColors.electricNeonGreen,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(18),
                           ),

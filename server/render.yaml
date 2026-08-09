@@ -3,7 +3,7 @@ services:
     name: gymguard-backend
     env: node
     plan: free
-    buildCommand: npm install && npm rebuild sqlite3 --build-from-source
+    buildCommand: npm install
     startCommand: npm start
     envVars:
       - key: NODE_VERSION
@@ -16,5 +16,5 @@ services:
         value: 7d
       - key: REFRESH_TOKEN_EXPIRE
         value: 30d
-      - key: DATABASE_FILE
-        value: ./azanto.db
+      - key: MONGODB_URI
+        sync: false

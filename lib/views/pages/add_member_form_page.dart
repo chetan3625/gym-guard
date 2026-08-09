@@ -433,14 +433,12 @@ class _LabeledField extends StatelessWidget {
               child: Container(
                 padding: EdgeInsets.all(12 * scale),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF69E322), Color(0xFF0DA339)],
-                  ),
+                  color: const Color(0xFF74EE15),
                   borderRadius: BorderRadius.circular(18 * scale),
                 ),
                 child: Icon(
                   Icons.search,
-                  color: Colors.white,
+                  color: Colors.black,
                   size: 20 * scale,
                 ),
               ),
@@ -471,15 +469,11 @@ class _GradientButton extends StatelessWidget {
         width: double.infinity,
         height: 59 * scale,
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF69E322), Color(0xFF0DA339)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
+          color: const Color(0xFF74EE15),
           borderRadius: BorderRadius.circular(24 * scale),
           boxShadow: [
             BoxShadow(
-              color: const Color.fromRGBO(13, 163, 57, 0.35),
+              color: const Color(0xFF74EE15).withValues(alpha: 0.35),
               blurRadius: 16 * scale,
               offset: Offset(0, 8 * scale),
             ),
@@ -490,8 +484,8 @@ class _GradientButton extends StatelessWidget {
           label,
           style: GoogleFonts.montserrat(
             fontSize: 16 * scale,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
+            fontWeight: FontWeight.w700,
+            color: Colors.black,
           ),
         ),
       ),

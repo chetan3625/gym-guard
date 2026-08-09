@@ -11,6 +11,7 @@ class AppColors {
   static const Color scaffoldDark = Color(0xFF111216);
   /// Figma style guide accent (#74EE15 / Electric Lime).
   static const Color brandGreen = Color(0xFF74EE15);
+  static const Color electricNeonGreen = Color(0xFF74EE15);
   static const Color neonGreen = Color(0xFFBBF246);
 
   /// Mobile app surfaces (Figma: azanto-frontend & Fitness UI Kit).

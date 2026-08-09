@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const config = require('./config');
+const { connectDB } = require('./database/db');
 
 const authRoutes = require('./routes/auth');
 const gymRoutes = require('./routes/gym');
@@ -12,6 +13,9 @@ const membershipRoutes = require('./routes/membership');
 const workoutRoutes = require('./routes/workout');
 
 const app = express();
+
+// Connect to MongoDB
+connectDB();
 
 // Middlewares
 app.use(cors());
@@ -26,8 +30,9 @@ app.use('/assets', express.static(config.uploadsDir));
 app.get('/', (req, res) => {
   res.json({
     status: 'online',
-    app: 'Azanto Gym Node.js Express API Server',
+    app: 'GymGuard Node.js Express & MongoDB API Server',
     version: '1.0.0',
+    database: 'MongoDB',
   });
 });
 
@@ -51,5 +56,5 @@ app.use((err, req, res, next) => {
 
 // Start Listening
 app.listen(config.port, config.host, () => {
-  console.log(`Azanto Gym Node.js Server running on http://${config.host}:${config.port}`);
+  console.log(`GymGuard Node.js & MongoDB Server running on http://${config.host}:${config.port}`);
 });

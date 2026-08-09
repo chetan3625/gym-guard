@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const config = require('../config');
-const { dbGet } = require('../database/db');
+const { User } = require('../models');
 
 async function authMiddleware(req, res, next) {
   try {
@@ -21,7 +21,7 @@ async function authMiddleware(req, res, next) {
       return res.status(401).json({ detail: 'Invalid token payload' });
     }
 
-    const user = await dbGet('SELECT * FROM users WHERE id = ?', [userId]);
+    const user = await User.findById(userId);
     if (!user) {
       return res.status(401).json({ detail: 'User not found' });
     }
