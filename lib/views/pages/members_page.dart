@@ -6,6 +6,8 @@ import 'package:azanto/core/responsive/responsive.dart';
 import 'package:azanto/core/theme/app_colors.dart';
 import 'package:azanto/models/branch_member_model.dart';
 import 'package:azanto/views/pages/member_profile_details_page.dart';
+import 'package:azanto/views/pages/member_health_page.dart';
+import 'package:azanto/views/pages/gym_qr_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -183,6 +185,37 @@ class _MembersPageState extends State<MembersPage> {
               ),
               SizedBox(height: 14.h),
               _MembersSearchField(controller: _searchController),
+              SizedBox(height: 14.h),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton.icon(
+                  onPressed: () => Get.to(() => const GymQrPage()),
+                  icon: const Icon(Icons.qr_code_rounded),
+                  label: const Text('Show gym registration QR'),
+                  style: TextButton.styleFrom(foregroundColor: Colors.white70),
+                ),
+              ),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => Get.to(() => const MemberHealthPage()),
+                  icon: const Icon(Icons.favorite_outline_rounded, size: 18),
+                  label: Text(
+                    'Member health & follow-up',
+                    style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.brandGreen,
+                    side: BorderSide(
+                      color: AppColors.brandGreen.withValues(alpha: 0.55),
+                    ),
+                    padding: EdgeInsets.symmetric(vertical: 11.h),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
+                  ),
+                ),
+              ),
               SizedBox(height: 14.h),
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,

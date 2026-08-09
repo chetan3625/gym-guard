@@ -9,6 +9,8 @@ const WorkoutCategory = require('./WorkoutCategory');
 const WorkoutBodyPart = require('./WorkoutBodyPart');
 const WorkoutExercise = require('./WorkoutExercise');
 const WorkoutTracking = require('./WorkoutTracking');
+const GymEnrollment = require('./GymEnrollment');
+const EngagementLog = require('./EngagementLog');
 
 module.exports = {
   User,
@@ -22,4 +24,6 @@ module.exports = {
   WorkoutBodyPart,
   WorkoutExercise,
   WorkoutTracking,
+  GymEnrollment,
+  EngagementLog,
 };

@@ -127,8 +127,8 @@ class _MemberDashboardScreenState extends State<MemberDashboardScreen> {
     if (!mounted) return;
     setState(() {
       _memberName = resolvedName.isEmpty ? 'Dear' : resolvedName;
-      _memberInitial = _memberName.isNotEmpty 
-          ? _memberName.substring(0, 1).toUpperCase() 
+      _memberInitial = _memberName.isNotEmpty
+          ? _memberName.substring(0, 1).toUpperCase()
           : 'M';
     });
   }
@@ -190,6 +190,14 @@ class _MemberDashboardScreenState extends State<MemberDashboardScreen> {
     return Scaffold(
       backgroundColor: AppColors.mobileScaffold,
       appBar: AzantoAppBar(
+        extraActions: [
+          IconButton(
+            tooltip: 'Scan gym QR',
+            onPressed: () => Get.toNamed(AppRoutes.qrScanner),
+            icon: const Icon(Icons.qr_code_scanner_rounded,
+                color: Colors.white70),
+          ),
+        ],
         onSettingsTap: () => Get.to<void>(() => const MemberSettingsPage()),
         onNotificationsTap: () =>
             Get.to<void>(() => const MemberNotificationsPage()),
@@ -880,7 +888,8 @@ class _BiDirectionalSliderState extends State<_BiDirectionalSlider> {
       final records = await _attendanceService.myAttendance();
       if (!mounted) return;
       setState(() {
-        _isCheckedIn = records.any((r) => r.checkIn != null && r.checkOut == null);
+        _isCheckedIn =
+            records.any((r) => r.checkIn != null && r.checkOut == null);
         _isLoadingStatus = false;
       });
     } catch (e) {
@@ -1006,16 +1015,26 @@ class _BiDirectionalSliderState extends State<_BiDirectionalSlider> {
         Color activeColor;
         Color borderActiveColor;
         if (_isCheckedIn) {
-          final ratio = (totalRange > 0) ? (_dragPosition / totalRange).clamp(0.0, 1.0) : 0.0;
-          activeColor = Color.lerp(AppColors.brandGreen, const Color(0xFFFF4D4D), ratio) ?? AppColors.brandGreen;
+          final ratio = (totalRange > 0)
+              ? (_dragPosition / totalRange).clamp(0.0, 1.0)
+              : 0.0;
+          activeColor = Color.lerp(
+                  AppColors.brandGreen, const Color(0xFFFF4D4D), ratio) ??
+              AppColors.brandGreen;
           borderActiveColor = activeColor.withValues(alpha: 0.3);
         } else {
-          final ratio = (totalRange > 0) ? (-_dragPosition / totalRange).clamp(0.0, 1.0) : 0.0;
-          activeColor = Color.lerp(Colors.white, AppColors.brandGreen, ratio) ?? Colors.white;
-          borderActiveColor = activeColor.withValues(alpha: ratio > 0.1 ? 0.3 : 0.1);
+          final ratio = (totalRange > 0)
+              ? (-_dragPosition / totalRange).clamp(0.0, 1.0)
+              : 0.0;
+          activeColor = Color.lerp(Colors.white, AppColors.brandGreen, ratio) ??
+              Colors.white;
+          borderActiveColor =
+              activeColor.withValues(alpha: ratio > 0.1 ? 0.3 : 0.1);
         }
 
-        final thumbLeft = _isCheckedIn ? (leftBound + _dragPosition) : (rightBound + _dragPosition);
+        final thumbLeft = _isCheckedIn
+            ? (leftBound + _dragPosition)
+            : (rightBound + _dragPosition);
 
         return Container(
           height: 64,
@@ -1029,7 +1048,8 @@ class _BiDirectionalSliderState extends State<_BiDirectionalSlider> {
             ),
             boxShadow: [
               BoxShadow(
-                color: activeColor.withValues(alpha: _isCheckedIn ? 0.15 : 0.05),
+                color:
+                    activeColor.withValues(alpha: _isCheckedIn ? 0.15 : 0.05),
                 blurRadius: 16,
                 offset: const Offset(0, 4),
               ),
@@ -1078,7 +1098,8 @@ class _BiDirectionalSliderState extends State<_BiDirectionalSlider> {
                         Text(
                           'Check-Out',
                           style: GoogleFonts.poppins(
-                            color: const Color(0xFFFF4D4D).withValues(alpha: 0.9),
+                            color:
+                                const Color(0xFFFF4D4D).withValues(alpha: 0.9),
                             fontWeight: FontWeight.w600,
                             fontSize: 15,
                           ),
@@ -1113,10 +1134,12 @@ class _BiDirectionalSliderState extends State<_BiDirectionalSlider> {
                       _dragPosition += details.delta.dx;
                       if (_isCheckedIn) {
                         if (_dragPosition < 0.0) _dragPosition = 0.0;
-                        if (_dragPosition > totalRange) _dragPosition = totalRange;
+                        if (_dragPosition > totalRange)
+                          _dragPosition = totalRange;
                       } else {
                         if (_dragPosition > 0.0) _dragPosition = 0.0;
-                        if (_dragPosition < -totalRange) _dragPosition = -totalRange;
+                        if (_dragPosition < -totalRange)
+                          _dragPosition = -totalRange;
                       }
                     });
                   },

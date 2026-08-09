@@ -63,6 +63,7 @@ class GymApiEndpoints {
       '${GlobalVariables.gymBaseUrl}/gym/updateGymDetails';
   static const String uploadLogo =
       '${GlobalVariables.gymBaseUrl}/gym/upload-logo';
+  static const String memberHealth = '${GlobalVariables.gymBaseUrl}/gym';
 }
 
 class MemberProfileApiEndpoints {

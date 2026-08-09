@@ -11,6 +11,7 @@ const memberProfileRoutes = require('./routes/memberProfile');
 const attendanceRoutes = require('./routes/attendance');
 const membershipRoutes = require('./routes/membership');
 const workoutRoutes = require('./routes/workout');
+const engagementRoutes = require('./routes/engagement');
 
 const app = express();
 
@@ -44,6 +45,7 @@ app.use('/profile/api/v1/member', memberProfileRoutes);
 app.use('/profile/api/v1/attendance', attendanceRoutes);
 app.use('/profile/api/v1/membership', membershipRoutes);
 app.use('/profile/api/v1/workout', workoutRoutes);
+app.use('/gym-branch/api/v1', engagementRoutes);
 
 // Global Error Handler
 app.use((err, req, res, next) => {

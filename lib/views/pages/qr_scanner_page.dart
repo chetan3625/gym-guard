@@ -1,4 +1,5 @@
 import 'package:azanto/core/theme/app_colors.dart';
+import 'package:azanto/Services/gym_qr_service.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -48,19 +49,46 @@ class _QrScannerPageState extends State<QrScannerPage> {
     return null;
   }
 
+  Future<bool> _tryJoinGym(Uri uri) async {
+    if (uri.scheme != 'azanto' || uri.host != 'gym' || uri.path != '/join') {
+      return false;
+    }
+    final gymId = uri.queryParameters['gym_id'] ?? '';
+    final branchId = uri.queryParameters['branch_id'] ?? '';
+    final code = uri.queryParameters['code'] ?? '';
+    if (gymId.isEmpty || branchId.isEmpty || code.isEmpty) {
+      _showMessage(
+          'Invalid gym QR', 'Ask the gym owner to generate a new QR code.');
+      return true;
+    }
+    try {
+      final result = await GymQrService()
+          .joinGym(gymId: gymId, branchId: branchId, code: code);
+      _showMessage('Welcome to ${result['gym_name'] ?? 'the gym'}',
+          'Your free trial is active. You can now check in.');
+      if (mounted) Get.back();
+    } catch (e) {
+      _showMessage(
+          'Could not join', e.toString().replaceFirst('Exception: ', ''));
+      _resumeScanning();
+    }
+    return true;
+  }
+
   Future<void> _handleDetection(BarcodeCapture capture) async {
     if (_isHandlingResult || capture.barcodes.isEmpty) return;
 
-    final String? rawValue = capture.barcodes
-        .map((barcode) => barcode.rawValue)
-        .firstWhere(
-          (value) => value != null && value.trim().isNotEmpty,
-          orElse: () => null,
-        );
+    final String? rawValue =
+        capture.barcodes.map((barcode) => barcode.rawValue).firstWhere(
+              (value) => value != null && value.trim().isNotEmpty,
+              orElse: () => null,
+            );
 
     if (rawValue == null) return;
 
     setState(() => _isHandlingResult = true);
+    final appUri = Uri.tryParse(rawValue);
+    if (appUri != null && await _tryJoinGym(appUri)) return;
     final uri = _normalizeUrl(rawValue);
 
     if (uri == null) {
@@ -148,7 +176,7 @@ class _QrScannerPageState extends State<QrScannerPage> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
             child: Text(
-              'Point your camera at a QR code. If it contains a link, we will open it in your browser.',
+              'Scan your gym QR to join and activate your free trial. Other web links will open in your browser.',
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
                 color: Colors.white70,

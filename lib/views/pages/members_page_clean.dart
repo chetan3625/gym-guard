@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:get/get.dart';
+import 'package:azanto/views/pages/member_health_page.dart';
 
 class MembersPage extends StatefulWidget {
   const MembersPage({super.key, required this.onAddMemberTap});
@@ -50,7 +52,8 @@ class _MembersPageState extends State<MembersPage> {
           result,
           const ['first_name', 'name', 'full_name', 'fullName'],
         );
-        _showMessage(memberName != null ? 'Found: $memberName' : 'Member found');
+        _showMessage(
+            memberName != null ? 'Found: $memberName' : 'Member found');
       } else {
         _showMessage('No member found for $phone');
       }
@@ -77,7 +80,8 @@ class _MembersPageState extends State<MembersPage> {
   void _showMessage(String message) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message), behavior: SnackBarBehavior.floating));
+      ..showSnackBar(SnackBar(
+          content: Text(message), behavior: SnackBarBehavior.floating));
   }
 
   @override
@@ -114,12 +118,33 @@ class _MembersPageState extends State<MembersPage> {
             ),
             SizedBox(height: 18.h),
             _AddMemberButton(onTap: widget.onAddMemberTap),
+            SizedBox(height: 12.h),
+            _MemberHealthButton(
+                onTap: () => Get.to(() => const MemberHealthPage())),
             SizedBox(height: 50.h), // Extra space for clean empty state
           ],
         ),
       ),
     );
   }
+}
+
+class _MemberHealthButton extends StatelessWidget {
+  const _MemberHealthButton({required this.onTap});
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) => OutlinedButton.icon(
+        onPressed: onTap,
+        icon: const Icon(Icons.favorite_outline_rounded),
+        label: const Text('Open member health & follow-up'),
+        style: OutlinedButton.styleFrom(
+          minimumSize: Size(double.infinity, 52.h),
+          foregroundColor: AppColors.brandGreen,
+          side: BorderSide(color: AppColors.brandGreen.withValues(alpha: .55)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+        ),
+      );
 }
 
 class _SearchMemberCard extends StatelessWidget {
@@ -183,22 +208,26 @@ class _SearchMemberCard extends StatelessWidget {
                 color: Colors.white.withValues(alpha: 0.46),
                 fontSize: 14.sp,
               ),
-              prefixIcon: const Icon(Icons.search_rounded, color: Colors.white70),
+              prefixIcon:
+                  const Icon(Icons.search_rounded, color: Colors.white70),
               filled: true,
               fillColor: Colors.white.withValues(alpha: 0.06),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14.r),
-                borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+                borderSide:
+                    BorderSide(color: Colors.white.withValues(alpha: 0.12)),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14.r),
-                borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+                borderSide:
+                    BorderSide(color: Colors.white.withValues(alpha: 0.12)),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14.r),
                 borderSide: const BorderSide(color: AppColors.brandGreen),
               ),
-              contentPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
+              contentPadding:
+                  EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
             ),
           ),
           SizedBox(height: 12.h),
@@ -210,7 +239,8 @@ class _SearchMemberCard extends StatelessWidget {
                 backgroundColor: AppColors.brandGreen,
                 foregroundColor: Colors.black,
                 padding: EdgeInsets.symmetric(vertical: 14.h),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14.r)),
               ),
               child: isSearching
                   ? SizedBox(
@@ -266,7 +296,8 @@ class _AddMemberButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.add_circle_outline_rounded, color: Colors.white, size: 20.sp),
+            Icon(Icons.add_circle_outline_rounded,
+                color: Colors.white, size: 20.sp),
             SizedBox(width: 8.w),
             Text(
               'Add Member',
@@ -282,4 +313,3 @@ class _AddMemberButton extends StatelessWidget {
     );
   }
 }
-

@@ -8,6 +8,8 @@ const gymSchema = new mongoose.Schema({
   email: { type: String, required: true },
   description: { type: String, default: 'Premium Strength and Conditioning Gym' },
   logo_url: { type: String, default: null },
+  trial_days: { type: Number, default: 7, min: 0 },
+  qr_code: { type: String, default: () => uuidv4().replace(/-/g, '') },
   is_active: { type: Boolean, default: true },
 }, { timestamps: { createdAt: 'created_at', updatedAt: false } });
 

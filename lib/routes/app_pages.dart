@@ -48,7 +48,7 @@ class AppPages {
       name: AppRoutes.qrScanner,
       page: () => const QrScannerPage(),
       middlewares: [
-        AuthGuard(allowedRoles: <String>{AuthRole.owner}),
+        AuthGuard(allowedRoles: <String>{AuthRole.owner, AuthRole.member}),
       ],
     ),
     GetPage<dynamic>(

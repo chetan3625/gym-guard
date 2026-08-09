@@ -5,7 +5,7 @@ const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const authMiddleware = require('../middleware/auth');
 const config = require('../config');
-const { Gym, GymBranch, Membership, User, Plan } = require('../models');
+const { Gym, GymBranch, Membership, User, Plan, GymEnrollment } = require('../models');
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, config.uploadsDir),
@@ -19,7 +19,7 @@ const upload = multer({ storage });
 // POST /gym-branch/api/v1/gym/onboardNewGym
 router.post('/gym/onboardNewGym', authMiddleware, async (req, res) => {
   try {
-    const { name, email, is_active, isActive } = req.body;
+    const { name, email, is_active, isActive, trial_days } = req.body;
     if (!name || !email) {
       return res.status(400).json({ detail: 'Gym name and email are required' });
     }
@@ -31,6 +31,7 @@ router.post('/gym/onboardNewGym', authMiddleware, async (req, res) => {
       name: name.trim(),
       email: email.trim(),
       is_active: active,
+      trial_days: Number.isFinite(Number(trial_days)) ? Math.max(0, Number(trial_days)) : 7,
     });
 
     return res.status(201).json({
@@ -39,6 +40,7 @@ router.post('/gym/onboardNewGym', authMiddleware, async (req, res) => {
       name: gym.name,
       email: gym.email,
       is_active: gym.is_active,
+      trial_days: gym.trial_days,
     });
   } catch (error) {
     console.error('Onboard gym error:', error);
@@ -62,6 +64,7 @@ router.get('/gym/getGym', authMiddleware, async (req, res) => {
       description: gym.description || 'Premium Strength and Conditioning Gym',
       is_active: gym.is_active,
       logo_url: gym.logo_url || null,
+      trial_days: gym.trial_days,
     });
   } catch (error) {
     console.error('Get gym error:', error);
@@ -73,7 +76,7 @@ router.get('/gym/getGym', authMiddleware, async (req, res) => {
 router.patch('/gym/updateGymDetails/:gym_id', authMiddleware, async (req, res) => {
   try {
     const { gym_id } = req.params;
-    const { name, email, description, is_active } = req.body;
+    const { name, email, description, is_active, trial_days } = req.body;
 
     const gym = await Gym.findOne({ _id: gym_id, owner_id: req.user._id });
     if (!gym) {
@@ -84,6 +87,7 @@ router.patch('/gym/updateGymDetails/:gym_id', authMiddleware, async (req, res) =
     if (email) gym.email = email.trim();
     if (description !== undefined) gym.description = description;
     if (is_active !== undefined) gym.is_active = Boolean(is_active);
+    if (trial_days !== undefined && Number.isFinite(Number(trial_days))) gym.trial_days = Math.max(0, Number(trial_days));
 
     await gym.save();
 
@@ -93,10 +97,50 @@ router.patch('/gym/updateGymDetails/:gym_id', authMiddleware, async (req, res) =
       email: gym.email,
       description: gym.description,
       is_active: gym.is_active,
+      trial_days: gym.trial_days,
     });
   } catch (error) {
     console.error('Update gym error:', error);
     return res.status(500).json({ detail: 'Internal server error' });
+  }
+});
+
+// Owner QR payload. Render this value as a QR code in the client; never use a
+// branch id alone as a join credential.
+router.get('/gym/:gym_id/qr', authMiddleware, async (req, res) => {
+  try {
+    const gym = await Gym.findOne({ _id: req.params.gym_id, owner_id: req.user._id });
+    const branch = await GymBranch.findOne({ _id: req.query.branch_id, gym_id: req.params.gym_id });
+    if (!gym || !branch) return res.status(404).json({ detail: 'Gym or branch not found' });
+    return res.json({
+      payload: `azanto://gym/join?gym_id=${gym._id}&branch_id=${branch._id}&code=${gym.qr_code}`,
+      trial_days: gym.trial_days,
+      gym_name: gym.name,
+      branch_name: branch.name,
+    });
+  } catch (error) {
+    return res.status(500).json({ detail: 'Unable to create gym QR payload' });
+  }
+});
+
+// A member scans the gym QR after signing in. Repeated scans are idempotent.
+router.post('/gym/join-by-qr', authMiddleware, async (req, res) => {
+  try {
+    const { gym_id, branch_id, code } = req.body;
+    const gym = await Gym.findById(gym_id);
+    const branch = await GymBranch.findOne({ _id: branch_id, gym_id });
+    if (!gym || !branch || !code || code !== gym.qr_code) return res.status(400).json({ detail: 'This gym QR code is invalid or expired' });
+    const trialEnds = new Date();
+    trialEnds.setDate(trialEnds.getDate() + gym.trial_days);
+    const enrollment = await GymEnrollment.findOneAndUpdate(
+      { gym_id, user_id: req.user._id },
+      { $setOnInsert: { gym_id, branch_id, user_id: req.user._id, source: 'qr', trial_ends_at: trialEnds } },
+      { upsert: true, new: true, setDefaultsOnInsert: true },
+    );
+    return res.status(200).json({ enrollment_id: enrollment._id, status: enrollment.status, trial_ends_at: enrollment.trial_ends_at, gym_name: gym.name });
+  } catch (error) {
+    console.error('Join gym by QR error:', error);
+    return res.status(500).json({ detail: 'Unable to join gym' });
   }
 });
 
