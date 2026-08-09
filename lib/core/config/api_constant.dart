@@ -1,10 +1,10 @@
 class GlobalVariables {
   const GlobalVariables._();
 
-  static const String authHost = 'https://devapi.azanto.in/auth';
-  static const String apiHost = 'https://devapi.azanto.in';
-  static const String gymHost = 'https://devapi.azanto.in/gym-branch';
-  static const String profileHost = 'https://devapi.azanto.in/profile';
+  static const String apiHost = 'https://gymguard-backend.onrender.com';
+  static const String authHost = '$apiHost/auth';
+  static const String gymHost = '$apiHost/gym-branch';
+  static const String profileHost = '$apiHost/profile';
 
   static const String apiVersion = '/api/v1';
   static const String authBaseUrl = '$authHost$apiVersion';
@@ -94,7 +94,7 @@ class MembershipApiEndpoints {
   const MembershipApiEndpoints._();
 
   static const String searchMember =
-      'https://devapi.azanto.in/profile/api/v1/member/search-member/{by_phone}';
+      '${GlobalVariables.memberProfileBaseUrl}/search-member/{by_phone}';
   static String get searchMemberWithPhone => '$searchMember?phone=';
   static const String membershipPurchase = GymApiEndpoints.addMember;
   static const String enrolledPlan =

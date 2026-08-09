@@ -1428,57 +1428,53 @@ class _MarkCompletedButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDisabled = isLoading || onPressed == null;
-    return SizedBox(
+    return Container(
       width: double.infinity,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          gradient: LinearGradient(
-            colors: isDisabled
-                ? [const Color(0xFF333333), const Color(0xFF333333)]
-                : [AppColors.payButtonStart, AppColors.payButtonEnd],
-          ),
-          boxShadow: isDisabled
-              ? []
-              : [
-                  BoxShadow(
-                    color: AppColors.activeBadgeGreen.withValues(alpha: 0.3),
-                    blurRadius: 14,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-        ),
-        child: ElevatedButton(
-          onPressed: isLoading ? null : onPressed,
-          style: ElevatedButton.styleFrom(
-            elevation: 0,
-            backgroundColor: Colors.transparent,
-            shadowColor: Colors.transparent,
-            foregroundColor: isDisabled ? Colors.white30 : Colors.white,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: isDisabled ? const Color(0xFF252730) : AppColors.brandGreen,
+        boxShadow: isDisabled
+            ? []
+            : [
+                BoxShadow(
+                  color: AppColors.brandGreen.withValues(alpha: 0.35),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: isLoading ? null : onPressed,
+          child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+            child: Center(
+              child: isLoading
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.4,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          AppColors.black,
+                        ),
+                      ),
+                    )
+                  : Text(
+                      selectedCount > 0
+                          ? 'Mark $selectedCount Selected Completed'
+                          : 'Select Exercises to Complete',
+                      style: GoogleFonts.poppins(
+                        color: isDisabled ? AppColors.textMuted : AppColors.black,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
             ),
           ),
-          child: isLoading
-              ? const SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
-              : Text(
-                  selectedCount > 0
-                      ? 'MARK COMPLETED ($selectedCount)'
-                      : 'MARK COMPLETED',
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 16,
-                    letterSpacing: 1.2,
-                  ),
-                ),
         ),
       ),
     );

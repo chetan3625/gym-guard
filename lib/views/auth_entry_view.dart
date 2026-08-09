@@ -134,6 +134,7 @@ class AuthEntryScreen extends GetView<AuthEntryController> {
               width: buttonWidth,
               child: _ActionButton(
                 label: 'Login',
+                textColor: AppColors.brandGreen,
                 height: buttonHeight,
                 fontSize: buttonTextSize,
                 textBoxWidth: buttonTextWidth,
@@ -143,8 +144,8 @@ class AuthEntryScreen extends GetView<AuthEntryController> {
                   color: AppColors.authLoginFill,
                   borderRadius: BorderRadius.circular(999),
                   border: Border.all(
-                    color: AppColors.authLoginBorder,
-                    width: 1.2,
+                    color: AppColors.brandGreen,
+                    width: 1.5,
                   ),
                   boxShadow: const [
                     BoxShadow(
@@ -162,30 +163,20 @@ class AuthEntryScreen extends GetView<AuthEntryController> {
               width: buttonWidth,
               child: _ActionButton(
                 label: 'Sign Up',
+                textColor: AppColors.black,
                 height: buttonHeight,
                 fontSize: buttonTextSize,
                 textBoxWidth: buttonTextWidth,
                 textBoxHeight: buttonTextHeight,
                 onTap: controller.onSignUpTap,
                 decoration: BoxDecoration(
+                  color: AppColors.brandGreen,
                   borderRadius: BorderRadius.circular(999),
-                  gradient: const LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      AppColors.authSignUpGradientTop,
-                      AppColors.authSignUpGradientBottom,
-                    ],
-                  ),
-                  border: Border.all(
-                    color: AppColors.authSignUpBorder,
-                    width: 1.0,
-                  ),
-                  boxShadow: const [
+                  boxShadow: [
                     BoxShadow(
-                      color: AppColors.authButtonShadow,
-                      blurRadius: 10,
-                      offset: Offset(0, 5),
+                      color: AppColors.brandGreen.withValues(alpha: 0.4),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
                     ),
                   ],
                 ),
@@ -201,6 +192,7 @@ class AuthEntryScreen extends GetView<AuthEntryController> {
 class _ActionButton extends StatelessWidget {
   const _ActionButton({
     required this.label,
+    required this.textColor,
     required this.height,
     required this.fontSize,
     required this.textBoxWidth,
@@ -210,6 +202,7 @@ class _ActionButton extends StatelessWidget {
   });
 
   final String label;
+  final Color textColor;
   final double height;
   final double fontSize;
   final double textBoxWidth;
@@ -236,17 +229,11 @@ class _ActionButton extends StatelessWidget {
                   fit: BoxFit.scaleDown,
                   child: Text(
                     label,
-                    style: GoogleFonts.montserrat(
-                      color: AppColors.white,
+                    style: GoogleFonts.poppins(
+                      color: textColor,
                       fontSize: fontSize,
                       fontWeight: FontWeight.w700,
-                      shadows: const [
-                        Shadow(
-                          color: AppColors.authButtonTextShadow,
-                          blurRadius: 4,
-                          offset: Offset(0, 1),
-                        ),
-                      ],
+                      letterSpacing: 0.5,
                     ),
                   ),
                 ),

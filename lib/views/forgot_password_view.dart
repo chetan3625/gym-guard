@@ -213,38 +213,32 @@ class _InputField extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: AppColors.loginFieldFill,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.inputFieldShadow,
-            blurRadius: 8,
-            offset: Offset(0, 4),
-          ),
-        ],
+        color: AppColors.inputFieldFill,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
       ),
       child: TextField(
         controller: controller,
         keyboardType: keyboardType,
         inputFormatters: inputFormatters,
         maxLength: maxLength,
-        style: GoogleFonts.montserrat(
+        style: GoogleFonts.poppins(
           color: AppColors.white,
-          fontSize: 16,
+          fontSize: 15,
           fontWeight: FontWeight.w500,
         ),
         decoration: InputDecoration(
           border: InputBorder.none,
           hintText: hintText,
-          hintStyle: GoogleFonts.montserrat(
+          hintStyle: GoogleFonts.poppins(
             color: AppColors.inputHint,
-            fontSize: 16,
+            fontSize: 14,
             fontWeight: FontWeight.w400,
           ),
-          prefixIcon: Icon(icon, color: AppColors.inputIcon, size: 22),
+          prefixIcon: Icon(icon, color: AppColors.brandGreen, size: 20),
           contentPadding: const EdgeInsets.symmetric(
             vertical: 16,
-            horizontal: 6,
+            horizontal: 14,
           ),
           counterText: '',
         ),
@@ -266,52 +260,38 @@ class _SendButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(999),
-        gradient: const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFF7DC13C), Color(0xFF3E7E0F)],
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.authButtonShadow,
-            blurRadius: 10,
-            offset: Offset(0, 6),
-          ),
-        ],
-      ),
-      child: SizedBox(
-        height: 56 * scale,
-        child: Material(
-          color: AppColors.transparent,
-          child: InkWell(
+    return SizedBox(
+      height: 54 * scale,
+      width: double.infinity,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.brandGreen,
+          foregroundColor: AppColors.black,
+          shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(999),
-            onTap: isLoading ? null : onTap,
-            child: Center(
-              child: isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          AppColors.white,
-                        ),
-                      ),
-                    )
-                  : Text(
-                      'Send Code',
-                      style: GoogleFonts.montserrat(
-                        color: AppColors.white,
-                        fontSize: 18 * scale,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-            ),
           ),
+          elevation: 4,
+          shadowColor: AppColors.brandGreen.withValues(alpha: 0.4),
         ),
+        onPressed: isLoading ? null : onTap,
+        child: isLoading
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.4,
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.black),
+                ),
+              )
+            : Text(
+                'Send Code',
+                style: GoogleFonts.poppins(
+                  color: AppColors.black,
+                  fontSize: 16 * scale,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.4,
+                ),
+              ),
       ),
     );
   }

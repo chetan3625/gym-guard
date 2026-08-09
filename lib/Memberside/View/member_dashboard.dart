@@ -617,24 +617,20 @@ class _PaymentCard extends StatelessWidget {
           ),
           Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(7),
-              gradient: const LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [AppColors.payButtonStart, AppColors.payButtonEnd],
-              ),
+              borderRadius: BorderRadius.circular(12),
+              color: AppColors.brandGreen,
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.brandGreen.withValues(alpha: 0.24),
+                  color: AppColors.brandGreen.withValues(alpha: 0.35),
                   blurRadius: 16,
-                  offset: const Offset(0, 8),
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
             child: Material(
               color: Colors.transparent,
               child: InkWell(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
                 onTap: () {},
                 child: Padding(
                   padding:
@@ -642,8 +638,8 @@ class _PaymentCard extends StatelessWidget {
                   child: Text(
                     'Pay Now',
                     style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontSize: 17,
+                      color: AppColors.black,
+                      fontSize: 15,
                       fontWeight: FontWeight.w700,
                     ),
                   ),

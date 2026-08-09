@@ -26,7 +26,7 @@ class AzantoAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onStatusTap;
 
   @override
-  Size get preferredSize => Size.fromHeight(70.h);
+  Size get preferredSize => Size.fromHeight(64.h);
 
   @override
   Widget build(BuildContext context) {
@@ -35,29 +35,25 @@ class AzantoAppBar extends StatelessWidget implements PreferredSizeWidget {
       backgroundColor: Colors.transparent,
       flexibleSpace: Container(
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF2F3136), // 0%
-              Color(0xFF1E1F23), // 62%
-              Color(0xFF0F1014), // 100%
-            ],
-            stops: [0.0, 0.62, 1.0],
+          color: AppColors.headerBarStart,
+          border: Border(
+            bottom: BorderSide(
+              color: Colors.white.withValues(alpha: 0.06),
+            ),
           ),
           borderRadius: BorderRadius.only(
-            bottomLeft: Radius.circular(18.r),
-            bottomRight: Radius.circular(18.r),
+            bottomLeft: Radius.circular(16.r),
+            bottomRight: Radius.circular(16.r),
           ),
         ),
       ),
       title: Text(
         'Azanto',
         style: GoogleFonts.poppins(
-          fontSize: 24.sp,
-          fontWeight: FontWeight.w600,
+          fontSize: 22.sp,
+          fontWeight: FontWeight.w700,
           color: Colors.white,
-          letterSpacing: 0.6,
+          letterSpacing: 0.5,
         ),
       ),
       actions: [
@@ -76,7 +72,7 @@ class AzantoAppBar extends StatelessWidget implements PreferredSizeWidget {
             icon: Icon(
               Icons.settings_outlined,
               color: Colors.white70,
-              size: 22.sp,
+              size: 20.sp,
             ),
             tooltip: 'Settings',
           ),
@@ -91,16 +87,16 @@ class AzantoAppBar extends StatelessWidget implements PreferredSizeWidget {
             }
           },
           icon: Icon(
-            Icons.notifications_none,
+            Icons.notifications_none_rounded,
             color: Colors.white70,
-            size: 22.sp,
+            size: 20.sp,
           ),
           tooltip: 'Notifications',
         ),
         if (showLogout)
           IconButton(
             onPressed: onLogout,
-            icon: Icon(Icons.logout, color: Colors.white70, size: 22.sp),
+            icon: Icon(Icons.logout_rounded, color: Colors.white70, size: 20.sp),
             tooltip: 'Logout',
           ),
         SizedBox(width: 8.w),
@@ -126,17 +122,16 @@ class _StatusTag extends StatelessWidget {
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
         decoration: BoxDecoration(
-          color: Color.fromRGBO(accent.red, accent.green, accent.blue, 0.16),
+          color: accent.withValues(alpha: 0.16),
           borderRadius: BorderRadius.circular(12.r),
           border: Border.all(
-              color:
-                  Color.fromRGBO(accent.red, accent.green, accent.blue, 0.9)),
+            color: accent.withValues(alpha: 0.8),
+          ),
           boxShadow: [
             BoxShadow(
-              color:
-                  Color.fromRGBO(accent.red, accent.green, accent.blue, 0.22),
+              color: accent.withValues(alpha: 0.2),
               blurRadius: 12.r,
-              offset: Offset(0, 6.h),
+              offset: Offset(0, 4.h),
             ),
           ],
         ),
@@ -147,7 +142,7 @@ class _StatusTag extends StatelessWidget {
               isActive
                   ? Icons.check_circle_rounded
                   : Icons.hourglass_bottom_rounded,
-              size: 16.w,
+              size: 14.w,
               color: accent,
             ),
             SizedBox(width: 6.w),
@@ -155,7 +150,7 @@ class _StatusTag extends StatelessWidget {
               label,
               style: GoogleFonts.poppins(
                 color: Colors.white,
-                fontSize: 12.sp,
+                fontSize: 11.sp,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0.2,
               ),
@@ -166,3 +161,4 @@ class _StatusTag extends StatelessWidget {
     );
   }
 }
+

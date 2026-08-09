@@ -379,37 +379,44 @@ class _AddMemberCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(7.r),
+        borderRadius: BorderRadius.circular(16.r),
         child: Container(
           width: double.infinity,
-          height: 147.h,
+          height: 120.h,
           decoration: BoxDecoration(
-            color: const Color(0xFF3A3A3A),
-            borderRadius: BorderRadius.circular(7.r),
-            border: Border.all(color: const Color(0xFF2F2F2F)),
+            color: AppColors.cardSurface,
+            borderRadius: BorderRadius.circular(16.r),
+            border: Border.all(color: AppColors.brandGreen.withValues(alpha: 0.3)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.25),
-                blurRadius: 6.r,
+                color: Colors.black.withValues(alpha: 0.3),
+                blurRadius: 16.r,
                 offset: Offset(0, 6.h),
               ),
             ],
           ),
-          child: Column(
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.add_rounded,
-                color: AppColors.brandGreen,
-                size: 36.sp,
+              Container(
+                width: 46.w,
+                height: 46.w,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.brandGreen.withValues(alpha: 0.15),
+                ),
+                child: Icon(
+                  Icons.add_rounded,
+                  color: AppColors.brandGreen,
+                  size: 28.sp,
+                ),
               ),
-              SizedBox(height: 10.h),
+              SizedBox(width: 14.w),
               Text(
                 'Add Member',
                 style: GoogleFonts.poppins(
-                  fontSize: 30.sp,
+                  fontSize: 22.sp,
                   fontWeight: FontWeight.w600,
-                  height: 40 / 30,
                   color: Colors.white,
                 ),
               ),

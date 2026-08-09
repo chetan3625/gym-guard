@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: gymguard-backend
+    env: node
+    plan: free
+    buildCommand: npm install && npm rebuild sqlite3 --build-from-source
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 20.18.0
+      - key: PORT
+        value: 10000
+      - key: JWT_SECRET
+        value: azanto-super-secret-jwt-key-2026
+      - key: ACCESS_TOKEN_EXPIRE
+        value: 7d
+      - key: REFRESH_TOKEN_EXPIRE
+        value: 30d
+      - key: DATABASE_FILE
+        value: ./azanto.db

@@ -180,13 +180,7 @@ class _GymOnboardingScreenState extends State<GymOnboardingScreen> {
         children: [
           Positioned.fill(
             child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0xFF0F121A), Color(0xFF0B0C12)],
-                ),
-              ),
+              color: AppColors.black,
             ),
           ),
           Positioned.fill(child: CustomPaint(painter: _GlowPainter())),

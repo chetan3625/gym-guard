@@ -222,52 +222,38 @@ class _ContinueButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(999),
-        gradient: const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFF7DC13C), Color(0xFF3E7E0F)],
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.authButtonShadow,
-            blurRadius: 10,
-            offset: Offset(0, 6),
-          ),
-        ],
-      ),
-      child: SizedBox(
-        height: 56 * scale,
-        child: Material(
-          color: AppColors.transparent,
-          child: InkWell(
+    return SizedBox(
+      height: 54 * scale,
+      width: double.infinity,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.brandGreen,
+          foregroundColor: AppColors.black,
+          shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(999),
-            onTap: isLoading ? null : onTap,
-            child: Center(
-              child: isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          AppColors.white,
-                        ),
-                      ),
-                    )
-                  : Text(
-                      'Continue',
-                      style: GoogleFonts.montserrat(
-                        color: AppColors.white,
-                        fontSize: 18 * scale,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-            ),
           ),
+          elevation: 4,
+          shadowColor: AppColors.brandGreen.withValues(alpha: 0.4),
         ),
+        onPressed: isLoading ? null : onTap,
+        child: isLoading
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.4,
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.black),
+                ),
+              )
+            : Text(
+                'Continue to Sign In',
+                style: GoogleFonts.poppins(
+                  color: AppColors.black,
+                  fontSize: 16 * scale,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.4,
+                ),
+              ),
       ),
     );
   }

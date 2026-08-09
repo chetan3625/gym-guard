@@ -129,32 +129,16 @@ class RoleSelectionScreen extends GetView<RoleSelectionController> {
                           height: buttonHeight,
                           fontSize: buttonTextSize,
                           onTap: controller.onGymOwnerTap,
-                          textColor: AppColors.white,
-                          iconColor: AppColors.white,
-                          topHighlight: true,
-                          textShadowColor: AppColors.roleButtonTextShadow,
+                          textColor: AppColors.black,
+                          iconColor: AppColors.black,
                           decoration: BoxDecoration(
+                            color: AppColors.brandGreen,
                             borderRadius: BorderRadius.circular(999),
-                            border: Border.all(
-                              color: AppColors.roleOwnerBorder,
-                              width: 1.0,
-                            ),
-                                           
-                            gradient: const LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                AppColors.roleOwnerGradientTop,
-                                AppColors.roleOwnerGradientMid,
-                                AppColors.roleOwnerGradientBottom,
-                              ],
-                              stops: [0.0, 0.58, 1.0],
-                            ),
-                            boxShadow: const [
+                            boxShadow: [
                               BoxShadow(
-                                color: AppColors.roleButtonShadowHeavy,
-                                blurRadius: 12,
-                                offset: Offset(0, 4),
+                                color: AppColors.brandGreen.withValues(alpha: 0.4),
+                                blurRadius: 16,
+                                offset: const Offset(0, 4),
                               ),
                             ],
                           ),
@@ -166,14 +150,14 @@ class RoleSelectionScreen extends GetView<RoleSelectionController> {
                           height: buttonHeight,
                           fontSize: buttonTextSize,
                           onTap: controller.onGymMemberTap,
-                          textColor: AppColors.roleMemberText,
-                          iconColor: AppColors.roleMemberIcon,
+                          textColor: AppColors.brandGreen,
+                          iconColor: AppColors.brandGreen,
                           decoration: BoxDecoration(
                             color: AppColors.roleMemberFill,
                             borderRadius: BorderRadius.circular(999),
                             border: Border.all(
-                              color: AppColors.roleMemberBorder,
-                              width: 1.2,
+                              color: AppColors.brandGreen,
+                              width: 1.5,
                             ),
                             boxShadow: const [
                               BoxShadow(

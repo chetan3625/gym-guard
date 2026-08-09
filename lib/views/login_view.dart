@@ -256,10 +256,13 @@ class _LoginField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
+    return Container(
       decoration: BoxDecoration(
         color: AppColors.loginFieldFill,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.08),
+        ),
       ),
       child: TextField(
         controller: controller,
@@ -267,22 +270,22 @@ class _LoginField extends StatelessWidget {
         keyboardType: keyboardType,
         inputFormatters: inputFormatters,
         maxLength: maxLength,
-        style: GoogleFonts.montserrat(
+        style: GoogleFonts.poppins(
           color: AppColors.white,
-          fontSize: 28 * MediaQuery.textScalerOf(context).scale(0.5),
+          fontSize: 14,
           fontWeight: FontWeight.w400,
         ),
         decoration: InputDecoration(
           border: InputBorder.none,
           hintText: hintText,
-          hintStyle: GoogleFonts.montserrat(
+          hintStyle: GoogleFonts.poppins(
             color: AppColors.inputHint,
-            fontSize: 28 * MediaQuery.textScalerOf(context).scale(0.5),
+            fontSize: 14,
             fontWeight: FontWeight.w400,
           ),
-          prefixIcon: Icon(icon, color: AppColors.inputIcon, size: 23),
+          prefixIcon: Icon(icon, color: AppColors.brandGreen, size: 20),
           suffixIcon: suffix,
-          contentPadding: const EdgeInsets.symmetric(vertical: 15),
+          contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
           counterText: '',
         ),
       ),
@@ -303,60 +306,44 @@ class _LoginButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
+    return Container(
       decoration: BoxDecoration(
+        color: AppColors.brandGreen,
         borderRadius: BorderRadius.circular(999),
-        gradient: const LinearGradient(
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-          colors: [
-            AppColors.loginButtonBorderStart,
-            AppColors.loginButtonBorderEnd,
-          ],
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(1.0),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: AppColors.loginButtonFill,
-            borderRadius: BorderRadius.circular(999),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.brandGreen.withValues(alpha: 0.4),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
           ),
-          child: Material(
-            color: AppColors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(999),
-              onTap: isBusy ? null : onTap,
-              child: Center(
-                child: SizedBox(
-                  width: 63 * textScale,
-                  height: 27 * textScale,
-                  child: FittedBox(
-                    child: isBusy
-                        ? SizedBox(
-                            width: 18 * textScale,
-                            height: 18 * textScale,
-                            child: const CircularProgressIndicator(
-                              strokeWidth: 2.4,
-                              valueColor:
-                                  AlwaysStoppedAnimation<Color>(
-                                AppColors.white,
-                              ),
-                            ),
-                          )
-                        : Text(
-                            'Login',
-                            style: GoogleFonts.montserrat(
-                              color: AppColors.white,
-                              fontSize: 20 * textScale,
-                              fontWeight: FontWeight.w700,
-                              height: 1.0,
-                            ),
-                          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(999),
+          onTap: isBusy ? null : onTap,
+          child: Center(
+            child: isBusy
+                ? SizedBox(
+                    width: 22 * textScale,
+                    height: 22 * textScale,
+                    child: const CircularProgressIndicator(
+                      strokeWidth: 2.4,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppColors.black,
+                      ),
+                    ),
+                  )
+                : Text(
+                    'Login',
+                    style: GoogleFonts.poppins(
+                      color: AppColors.black,
+                      fontSize: 16 * textScale,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                    ),
                   ),
-                ),
-              ),
-            ),
           ),
         ),
       ),

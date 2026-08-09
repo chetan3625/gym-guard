@@ -21,7 +21,7 @@ class AzantoPageBackground extends StatelessWidget {
             AppColors.mobileGradientMid,
             AppColors.mobileGradientEnd,
           ],
-          stops: [0.054, 0.516, 0.927],
+          stops: [0.0, 0.5, 1.0],
         ),
       ),
       child: child,
@@ -46,28 +46,23 @@ class AzantoMobileHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
     final horizontalPad = width >= ResponsiveBreakpoints.tablet ? 20.0 : 16.0;
-    final barHeight = width >= ResponsiveBreakpoints.tablet ? 86.0 : 78.0;
+    final barHeight = width >= ResponsiveBreakpoints.tablet ? 76.0 : 68.0;
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(horizontalPad, 8, horizontalPad, 10),
+      padding: EdgeInsets.fromLTRB(horizontalPad, 6, horizontalPad, 8),
       child: Container(
         height: barHeight,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(7),
-          gradient: const LinearGradient(
-            begin: Alignment(-0.9, -0.2),
-            end: Alignment(0.95, 0.4),
-            colors: [
-              AppColors.headerBarStart,
-              AppColors.headerBarMid,
-              AppColors.headerBarEnd,
-            ],
-            stops: [0.19, 0.42, 0.96],
+          borderRadius: BorderRadius.circular(16),
+          color: AppColors.headerBarStart,
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.06),
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.51),
-              blurRadius: 38,
+              color: Colors.black.withValues(alpha: 0.4),
+              blurRadius: 20,
               offset: const Offset(0, 4),
             ),
           ],
@@ -78,9 +73,9 @@ class AzantoMobileHeader extends StatelessWidget {
               'Azanto',
               style: GoogleFonts.poppins(
                 color: Colors.white,
-                fontSize: width >= ResponsiveBreakpoints.tablet ? 26 : 22,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.4,
+                fontSize: width >= ResponsiveBreakpoints.tablet ? 24 : 20,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.5,
               ),
             ),
             const Spacer(),
@@ -90,7 +85,7 @@ class AzantoMobileHeader extends StatelessWidget {
                 icon: Icons.settings_outlined,
                 onTap: onSettingsTap!,
               ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
             _HeaderIconButton(
               icon: Icons.notifications_none_rounded,
               onTap: onNotificationsTap ?? () {},
@@ -111,14 +106,15 @@ class _HeaderIconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.transparent,
+      color: AppColors.cardIconCircle,
+      borderRadius: BorderRadius.circular(12),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
         child: SizedBox(
-          width: 36,
-          height: 36,
-          child: Icon(icon, color: Colors.white70, size: 22),
+          width: 38,
+          height: 38,
+          child: Icon(icon, color: Colors.white70, size: 20),
         ),
       ),
     );
@@ -132,7 +128,7 @@ class AzantoNavItem {
   final String label;
 }
 
-/// Figma bottom navigation (72px, #303030, green active state).
+/// Figma bottom navigation (72px, #1C1D22, green active state).
 class AzantoBottomNavBar extends StatelessWidget {
   const AzantoBottomNavBar({
     super.key,
@@ -166,15 +162,19 @@ class AzantoBottomNavBar extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Container(
-        height: 72,
+        height: 70,
+        margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
         decoration: BoxDecoration(
           color: AppColors.navBarSurface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.08),
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.25),
-              blurRadius: 33,
-              offset: const Offset(10, -3),
+              color: Colors.black.withValues(alpha: 0.45),
+              blurRadius: 24,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
@@ -208,9 +208,7 @@ class _NavTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color =
-        isActive ? AppColors.brandGreen : AppColors.textMuted;
-    final labelSize = isActive ? 10.0 : 12.0;
+    final color = isActive ? AppColors.brandGreen : AppColors.textMuted;
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -218,20 +216,18 @@ class _NavTile extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          DecoratedBox(
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
             decoration: isActive
                 ? BoxDecoration(
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.brandGreen.withValues(alpha: 0.85),
-                        blurRadius: 3,
-                      ),
-                    ],
+                    color: AppColors.brandGreen.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(16),
                   )
                 : const BoxDecoration(),
             child: Icon(item.icon, color: color, size: 22),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
             item.label,
             maxLines: 1,
@@ -239,7 +235,7 @@ class _NavTile extends StatelessWidget {
             textAlign: TextAlign.center,
             style: GoogleFonts.poppins(
               color: color,
-              fontSize: labelSize,
+              fontSize: 10,
               fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
             ),
           ),
@@ -251,29 +247,20 @@ class _NavTile extends StatelessWidget {
 
 /// Figma card gradient used across member/owner dashboards.
 BoxDecoration azantoMetricCardDecoration({
-  Color borderColor = const Color(0xFF999999),
+  Color borderColor = const Color(0xFF2A2B30),
   bool highlight = false,
 }) {
   return BoxDecoration(
-    borderRadius: BorderRadius.circular(7),
-    gradient: const LinearGradient(
-      begin: Alignment.centerLeft,
-      end: Alignment.centerRight,
-      colors: [
-        Color(0xC42D2D2D),
-        Color(0xFF2F2F2F),
-        Color(0xC4252525),
-      ],
-      stops: [0.0, 0.47, 1.0],
-    ),
+    borderRadius: BorderRadius.circular(16),
+    color: AppColors.cardSurface,
     border: Border.all(
-      color: highlight ? const Color(0xFF333333) : borderColor,
-      width: highlight ? 1 : 0.6,
+      color: highlight ? AppColors.brandGreen : borderColor,
+      width: highlight ? 1.2 : 0.8,
     ),
     boxShadow: [
       BoxShadow(
-        color: Colors.black.withValues(alpha: 0.22),
-        blurRadius: 10,
+        color: Colors.black.withValues(alpha: 0.28),
+        blurRadius: 16,
         offset: const Offset(0, 4),
       ),
     ],
@@ -283,14 +270,14 @@ BoxDecoration azantoMetricCardDecoration({
 BoxDecoration azantoPanelCardDecoration({Color? borderColor}) {
   return BoxDecoration(
     color: AppColors.cardSurface,
-    borderRadius: BorderRadius.circular(7),
+    borderRadius: BorderRadius.circular(16),
     border: Border.all(
       color: borderColor ?? Colors.white.withValues(alpha: 0.06),
     ),
     boxShadow: [
       BoxShadow(
-        color: Colors.black.withValues(alpha: 0.18),
-        blurRadius: 12,
+        color: Colors.black.withValues(alpha: 0.25),
+        blurRadius: 16,
         offset: const Offset(0, 6),
       ),
     ],
@@ -308,3 +295,4 @@ EdgeInsets azantoContentPadding(BuildContext context) {
   }
   return const EdgeInsets.fromLTRB(14, 12, 14, 18);
 }
+

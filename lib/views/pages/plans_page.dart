@@ -537,14 +537,14 @@ class _Palette {
 
 const _palettes = <_Palette>[
   _Palette(
-    titleColor: Color(0xFFE2C067),
-    borderColor: Color(0xFFF7DA58),
+    titleColor: AppColors.brandGreen,
+    borderColor: AppColors.brandGreen,
     buttonGradient: LinearGradient(
-      colors: [Color(0xFFECC55D), Color(0xFFC38A1F)],
+      colors: [AppColors.brandGreen, Color(0xFF84FE56)],
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
     ),
-    buttonTextColor: Color(0xFF0E3215),
+    buttonTextColor: AppColors.black,
     priceColor: Colors.white,
   ),
   _Palette(
@@ -567,17 +567,6 @@ const _palettes = <_Palette>[
       end: Alignment.bottomCenter,
     ),
     buttonTextColor: Color(0xFF11121A),
-    priceColor: Colors.white,
-  ),
-  _Palette(
-    titleColor: Color(0xFFE2E4EB),
-    borderColor: Color(0xFFB4B9CE),
-    buttonGradient: LinearGradient(
-      colors: [Color(0xFF8C94B5), Color(0xFFC3C9DA)],
-      begin: Alignment.topCenter,
-      end: Alignment.bottomCenter,
-    ),
-    buttonTextColor: Color(0xFF0F1A2D),
     priceColor: Colors.white,
   ),
 ];
@@ -618,20 +607,20 @@ class _PlanField extends StatelessWidget {
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(color: Colors.white70),
+            hintStyle: const TextStyle(color: Colors.white54),
             filled: true,
-            fillColor: Colors.white.withValues(alpha: 0.08),
+            fillColor: AppColors.inputFieldFill,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14.r),
-              borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.16)),
+              borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14.r),
-              borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.16)),
+              borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14.r),
-              borderSide: const BorderSide(color: Colors.white),
+              borderSide: const BorderSide(color: AppColors.brandGreen),
             ),
             contentPadding: EdgeInsets.symmetric(
               horizontal: 14.w,
@@ -655,16 +644,12 @@ class _EmptyState extends StatelessWidget {
       width: double.infinity,
       padding: EdgeInsets.fromLTRB(18.w, 20.h, 18.w, 24.h),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF191C24), Color(0xFF11131A)],
-        ),
-        borderRadius: BorderRadius.circular(26),
+        color: AppColors.cardSurface,
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.black.withValues(alpha: 0.24),
+            color: AppColors.black.withValues(alpha: 0.3),
             blurRadius: 18,
             offset: const Offset(0, 12),
           ),
@@ -706,7 +691,7 @@ class _EmptyState extends StatelessWidget {
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
                 foregroundColor: AppColors.black,
-                backgroundColor: const Color(0xFF7CE05B),
+                backgroundColor: AppColors.brandGreen,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16.r),
                 ),
@@ -740,7 +725,7 @@ class _PlansLoadErrorState extends StatelessWidget {
       width: double.infinity,
       padding: EdgeInsets.fromLTRB(18.w, 20.h, 18.w, 20.h),
       decoration: BoxDecoration(
-        color: const Color(0xFF1C1E24),
+        color: AppColors.cardSurface,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
@@ -776,11 +761,11 @@ class _PlansLoadErrorState extends StatelessWidget {
             height: 46.h,
             child: OutlinedButton(
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Color(0xFF63D700)),
+                side: const BorderSide(color: AppColors.brandGreen),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14.r),
                 ),
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.brandGreen,
               ),
               onPressed: onRetryTap,
               child: const Text('Retry'),
@@ -810,12 +795,12 @@ class _CreatePlanButton extends StatelessWidget {
       child: ElevatedButton.icon(
         onPressed: isBusy ? null : onTap,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF63D700),
-          foregroundColor: Colors.black,
+          backgroundColor: AppColors.brandGreen,
+          foregroundColor: AppColors.black,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14.r),
           ),
-          elevation: 6,
+          elevation: 4,
         ),
         icon: isBusy
             ? SizedBox(
@@ -823,7 +808,7 @@ class _CreatePlanButton extends StatelessWidget {
                 width: 16.w,
                 child: const CircularProgressIndicator(
                   strokeWidth: 2.2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.black),
                 ),
               )
             : Icon(Icons.add, size: 18.sp),
